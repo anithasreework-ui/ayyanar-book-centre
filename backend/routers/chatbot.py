@@ -1,0 +1,73 @@
+from fastapi import APIRouter
+import requests
+
+router = APIRouter(prefix="/ai", tags=["AI Chatbot"])
+
+SYSTEM_PROMPTS = {
+    "english": """You are a helpful assistant for Ayyanar Book Centre, 
+a bookshop in Dindigul, Tamil Nadu, India.
+You help customers find books, stationery, school accessories.
+Categories: TNPSC books, NCERT, Tamil Nadu textbooks, novels, 
+motivational books, children books, stationery, school bags, 
+water bottles, customised gifts, wholesale for schools/colleges.
+Delivery: Home delivery all over India and worldwide. Store pickup also available.
+ALWAYS reply in English only.""",
+
+    "tamil": """நீங்கள் திண்டுக்கல்லில் உள்ள அய்யனார் புத்தக மையத்தின் உதவியாளர்.
+நீங்கள் வாடிக்கையாளர்களுக்கு புத்தகங்கள், எழுதுபொருட்கள் கண்டுபிடிக்க உதவுகிறீர்கள்.
+வகைகள்: TNPSC புத்தகங்கள், NCERT, தமிழ்நாடு பாடப்புத்தகங்கள், நாவல்கள்,
+உந்துதல் புத்தகங்கள், குழந்தை புத்தகங்கள், எழுதுபொருட்கள், பள்ளி பைகள்.
+டெலிவரி: இந்தியா மற்றும் உலகம் முழுவதும். கடையில் எடுக்கவும் வரலாம்.
+எப்போதும் தமிழிலேயே பதில் சொல்லுங்கள்.""",
+
+    "tanglish": """You are a helpful assistant for Ayyanar Book Centre in Dindigul.
+Help customers find books and stationery items.
+Categories: TNPSC books, NCERT, Tamil Nadu textbooks, novels, 
+motivational books, children books, stationery, school accessories.
+Delivery available all over India and worldwide.
+ALWAYS reply in Tanglish (Tamil words written in English letters).
+Example: 'Neenga TNPSC padikreenga-na, indha book best-a irukkum!'"""
+}
+
+
+@router.post("/chat")
+def chat_with_bot(message: dict):
+    user_message = message.get("message", "")
+    # Customer choose பண்ண language — default english
+    language = message.get("language", "english").lower()
+
+    if not user_message:
+        return {"reply": "Please send a message!"}
+
+    # Choose பண்ண language-ku system prompt எடு
+    system_prompt = SYSTEM_PROMPTS.get(language, SYSTEM_PROMPTS["english"])
+    full_prompt = f"{system_prompt}\n\nCustomer: {user_message}\nAssistant:"
+
+    try:
+        response = requests.post(
+            "http://localhost:11434/api/generate",
+            json={
+                "model": "llama3.2",
+                "prompt": full_prompt,
+                "stream": False
+            },
+            timeout=60
+        )
+        result = response.json()
+        return {
+            "reply": result["response"],
+            "language_used": language,
+            "status": "success"
+        }
+
+    except Exception as e:
+        return {
+            "reply": "Sorry, chatbot unavailable. Please call us!",
+            "status": "error",
+            "error": str(e)
+        }
+
+
+@router.get("/health")
+def health_check():
+    return {"status": "AI Chatbot running! ✅"}
