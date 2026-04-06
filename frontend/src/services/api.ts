@@ -2,7 +2,7 @@ import axios from 'axios';
 
 // Backend URL
 const API = axios.create({
-  baseURL: 'http://localhost:8000',
+  baseURL: 'https://ayyanar-book-centre-1.onrender.com',
 });
 
 // Token automatic-ஆ header-ல போகும்
