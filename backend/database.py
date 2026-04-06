@@ -8,6 +8,8 @@ load_dotenv()
 
 # Direct URL use பண்ணு — IPv4 pooler connection
 DATABASE_URL = os.getenv("DATABASE_URL")
+if not DATABASE_URL:
+    raise ValueError("DATABASE_URL is not set in environment variables")
 
 engine = create_engine(DATABASE_URL)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
@@ -19,3 +21,4 @@ def get_db():
         yield db
     finally:
         db.close()
+print("DATABASE_URL:", DATABASE_URL)
