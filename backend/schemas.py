@@ -1,17 +1,16 @@
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel
 from typing import Optional
-from enum import Enum
 
 # ---- USER SCHEMAS ----
 
 class UserRegister(BaseModel):
     name: str
-    email: EmailStr        # Automatic email format check
+    email: str
     password: str
     phone: Optional[str] = None
 
 class UserLogin(BaseModel):
-    email: EmailStr
+    email: str
     password: str
 
 class UserResponse(BaseModel):
@@ -19,7 +18,7 @@ class UserResponse(BaseModel):
     name: str
     email: str
     role: str
-    
+
     class Config:
         from_attributes = True
 
@@ -40,7 +39,7 @@ class ProductResponse(BaseModel):
     category: str
     stock_qty: int
     is_available: bool
-    
+
     class Config:
         from_attributes = True
 
@@ -49,13 +48,13 @@ class ProductResponse(BaseModel):
 class OrderCreate(BaseModel):
     delivery_type: str
     delivery_address: Optional[str] = None
-    items: list  # Product list
+    items: list
 
 class OrderResponse(BaseModel):
     id: int
     total_amount: float
     status: str
     delivery_type: str
-    
+
     class Config:
         from_attributes = True
