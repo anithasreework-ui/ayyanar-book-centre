@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 
 const STEPS = [
   { label: 'Order Placed', icon: '📋', desc: 'We received your order' },
