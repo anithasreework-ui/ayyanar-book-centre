@@ -11,10 +11,11 @@ class User(Base):
     email = Column(String(100), unique=True, nullable=False)
     password_hash = Column(String(255), nullable=False)
     phone = Column(String(15))
-    role = Column(Enum('customer', 'admin'), default='customer')
+    
+    role = Column(Enum('customer', 'admin', name="user_role_enum"), default='customer')
+    
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
     
-    # User-ஓட orders எல்லாம் access பண்ண
     orders = relationship("Order", back_populates="user")
 
 
@@ -38,14 +39,17 @@ class Order(Base):
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"))
     total_amount = Column(Float)
+    
     status = Column(
-        Enum('pending','confirmed','shipped','delivered','cancelled'),
+        Enum('pending','confirmed','shipped','delivered','cancelled', name="order_status_enum"),
         default='pending'
     )
+    
     delivery_type = Column(
-        Enum('home_delivery','store_pickup'),
+        Enum('home_delivery','store_pickup', name="delivery_type_enum"),
         default='home_delivery'
     )
+    
     delivery_address = Column(Text)
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
     
@@ -72,6 +76,11 @@ class Payment(Base):
     order_id = Column(Integer, ForeignKey("orders.id"))
     amount = Column(Float)
     payment_method = Column(String(50))
-    status = Column(Enum('pending','success','failed'), default='pending')
+    
+    status = Column(
+        Enum('pending','success','failed', name="payment_status_enum"),
+        default='pending'
+    )
+    
     transaction_id = Column(String(255))
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
