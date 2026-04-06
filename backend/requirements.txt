@@ -9,3 +9,5 @@ python-dotenv
 requests
 groq
 bcrypt
+pydantic[email]
+email-validator
