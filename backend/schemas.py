@@ -1,7 +1,6 @@
 from pydantic import BaseModel
 from typing import Optional
 
-# ---- USER SCHEMAS ----
 
 class UserRegister(BaseModel):
     name: str
@@ -9,9 +8,11 @@ class UserRegister(BaseModel):
     password: str
     phone: Optional[str] = None
 
+
 class UserLogin(BaseModel):
     email: str
     password: str
+
 
 class UserResponse(BaseModel):
     id: int
@@ -22,7 +23,6 @@ class UserResponse(BaseModel):
     class Config:
         from_attributes = True
 
-# ---- PRODUCT SCHEMAS ----
 
 class ProductCreate(BaseModel):
     name: str
@@ -31,6 +31,7 @@ class ProductCreate(BaseModel):
     category: str
     stock_qty: int
     image_url: Optional[str] = None
+
 
 class ProductResponse(BaseModel):
     id: int
@@ -43,12 +44,12 @@ class ProductResponse(BaseModel):
     class Config:
         from_attributes = True
 
-# ---- ORDER SCHEMAS ----
 
 class OrderCreate(BaseModel):
     delivery_type: str
     delivery_address: Optional[str] = None
     items: list
+
 
 class OrderResponse(BaseModel):
     id: int
