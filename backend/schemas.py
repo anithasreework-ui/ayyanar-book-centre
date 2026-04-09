@@ -29,6 +29,7 @@ class ProductCreate(BaseModel):
     description: Optional[str] = None
     price: float
     category: str
+    subcategory: Optional[str] = None
     stock_qty: int
     image_url: Optional[str] = None
 

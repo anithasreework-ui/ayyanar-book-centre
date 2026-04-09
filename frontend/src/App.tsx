@@ -10,6 +10,7 @@ import Cart from './pages/Cart';
 import Checkout from './pages/Checkout';
 import OrderTracking from './pages/OrderTracking';
 import Admin from './pages/Admin';
+import Wholesale from './pages/Wholesale';
 
 function App() {
   return (
@@ -26,6 +27,7 @@ function App() {
           <Route path="/checkout" element={<Checkout />} />
           <Route path="/orders" element={<OrderTracking />} />
           <Route path="/admin" element={<Admin />} />
+          <Route path="/wholesale" element={<Wholesale />} />
         </Routes>
         <ChatBot />
       </div>

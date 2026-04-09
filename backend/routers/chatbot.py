@@ -4,38 +4,59 @@ import os
 from dotenv import load_dotenv
 
 load_dotenv()
-
 router = APIRouter(prefix="/ai", tags=["AI Chatbot"])
-
 client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 
-SYSTEM_PROMPTS = {
-    "english": """You are a helpful assistant for Ayyanar Book Centre,
-a bookshop in Dindigul, Tamil Nadu, India.
-Help customers find books, stationery, school accessories.
-Categories: TNPSC books, NCERT, Tamil Nadu textbooks, novels,
-motivational books, children books, stationery, school bags,
-water bottles, customised gifts, wholesale for schools and colleges.
-Delivery: Home delivery all over India and worldwide.
-Store pickup available at Dindigul shop.
-ALWAYS reply in English only.""",
+SHOP_INFO = """
+=== AYYANAR BOOK CENTRE — OFFICIAL INFO ===
+Shop Name: Ayyanar Book Centre
+Address: Dindigul, Tamil Nadu, India - 624 001
+Phone: +91 9894235330
+Customer Care: +91 9894235330
+Email: ayyanarbookcentredgl1@gmail.com
+Instagram: @ayyanarbookcentre
+Working Hours: Monday to Saturday, 9:00 AM to 8:00 PM
 
-    "tamil": """நீங்கள் திண்டுக்கல்லில் உள்ள அய்யனார் புத்தக மையத்தின் உதவியாளர்.
-வாடிக்கையாளர்களுக்கு புத்தகங்கள், எழுதுபொருட்கள் கண்டுபிடிக்க உதவுகிறீர்கள்.
-வகைகள்: TNPSC புத்தகங்கள், NCERT, தமிழ்நாடு பாடப்புத்தகங்கள், நாவல்கள்,
-உந்துதல் புத்தகங்கள், குழந்தை புத்தகங்கள், எழுதுபொருட்கள், பள்ளி பைகள்.
-டெலிவரி: இந்தியா மற்றும் உலகம் முழுவதும். கடையில் எடுக்கவும் வரலாம்.
-எப்போதும் தமிழிலேயே பதில் சொல்லுங்கள்.""",
+=== DELIVERY INFO ===
+Free Delivery: Orders above Rs.1000
+Tamil Nadu: Rs.50
+Other States: Rs.150
+International: Rs.500+
+Store Pickup: Available at Dindigul shop (Prepaid orders only)
+Worldwide Delivery: Yes available
 
-    "tanglish": """You are a helpful assistant for Ayyanar Book Centre in Dindigul.
-Help customers find books and stationery items.
-Categories: TNPSC books, NCERT, Tamil Nadu textbooks, novels,
-motivational books, children books, stationery, school accessories.
-Delivery available all over India and worldwide.
-ALWAYS reply in Tanglish only (Tamil words written in English letters).
-Example: 'Neenga TNPSC padikreenga-na, indha book best-a irukkum!'"""
+=== PRODUCT CATEGORIES ===
+1. State Board Books & Guides (Science, Maths, English, Tamil, Social Science)
+2. CBSE Books & Guides (All subjects, All classes)
+3. Tamil Nadu Textbooks (Samacheer Kalvi - State Board)
+4. TNPSC Books (Group 1, 2, 4, VAO, TET, TNTET)
+5. NCERT Books (All classes)
+6. Notebooks & Stationery
+7. Medical Books & College Books
+8. Children Books & Story Books
+9. Novels (Tamil & English)
+10. Motivational Books
+11. Customised Gifts & Hampers
+12. School Projects & Teacher Training Models
+13. School Accessories (Bags, Water Bottles, Lunch Boxes, Pencil Boxes)
+14. Combos (Book + Stationery sets)
+15. Wholesale for Schools & Colleges (MOU available)
+
+=== STRICT RULES — MUST FOLLOW ===
+RULE 1: Use ONLY the above information to answer
+RULE 2: If someone asks for phone → give +91 9894235330
+RULE 3: If someone asks for email → give ayyanarbookcentredgl1@gmail.com
+RULE 4: If someone asks anything NOT in above info → say exactly:
+         "I don't have that information. Please contact customer care at +91 9894235330"
+RULE 5: NEVER guess or make up any information
+RULE 6: NEVER give random phone numbers or addresses
+"""
+
+LANG_RULES = {
+    "english": "Reply in English only.",
+    "tamil": "எப்போதும் தமிழிலேயே பதில் சொல்லுங்கள்.",
+    "tanglish": "Reply in Tanglish only (Tamil words in English letters). Example: 'Neenga phone pannunga +91 9894235330 la'"
 }
-
 
 @router.post("/chat")
 def chat_with_bot(message: dict):
@@ -45,41 +66,32 @@ def chat_with_bot(message: dict):
     if not user_message:
         return {"reply": "Please send a message!"}
 
-    system_prompt = SYSTEM_PROMPTS.get(language, SYSTEM_PROMPTS["english"])
+    system_prompt = (
+        SHOP_INFO + "\n\n" +
+        LANG_RULES.get(language, LANG_RULES["english"])
+    )
 
     try:
         response = client.chat.completions.create(
             model="llama-3.3-70b-versatile",
             messages=[
-                {
-                    "role": "system",
-                    "content": system_prompt
-                },
-                {
-                    "role": "user",
-                    "content": user_message
-                }
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_message}
             ],
             max_tokens=500,
-            temperature=0.7
+            temperature=0.1
         )
-
-        reply = response.choices[0].message.content
-
         return {
-            "reply": reply,
+            "reply": response.choices[0].message.content,
             "language_used": language,
             "status": "success"
         }
-
     except Exception as e:
         return {
-            "reply": "Sorry, chatbot unavailable. Please call us directly!",
-            "status": "error",
-            "error": str(e)
+            "reply": "Sorry! Please contact +91 9894235330",
+            "status": "error"
         }
-
 
 @router.get("/health")
 def health_check():
-    return {"status": "Groq + Llama3 Chatbot running! ✅"}
+    return {"status": "Chatbot running!"}

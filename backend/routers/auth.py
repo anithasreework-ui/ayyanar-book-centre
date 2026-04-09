@@ -1,74 +1,106 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from passlib.context import CryptContext
 from jose import jwt
 from datetime import datetime, timedelta
 from database import get_db
-import models, schemas, os
+import models, os, bcrypt
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
+SECRET_KEY = os.getenv("SECRET_KEY", "ayyanar2024secretkey")
 
-# Password encrypt பண்ண
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
-SECRET_KEY = os.getenv("SECRET_KEY", "defaultsecret")
+def hash_password(password: str) -> str:
+    pwd_bytes = password[:72].encode('utf-8')
+    salt = bcrypt.gensalt()
+    return bcrypt.hashpw(pwd_bytes, salt).decode('utf-8')
 
-def hash_password(password: str):
-    return pwd_context.hash(password)
 
-def verify_password(plain, hashed):
-    return pwd_context.verify(plain, hashed)
+def verify_password(plain: str, hashed: str) -> bool:
+    try:
+        return bcrypt.checkpw(
+            plain[:72].encode('utf-8'),
+            hashed.encode('utf-8')
+        )
+    except Exception:
+        return False
 
-def create_token(user_id: int, role: str):
-    # Token 7 days valid
+
+def create_token(user_id: int, role: str) -> str:
     expire = datetime.utcnow() + timedelta(days=7)
     data = {"sub": str(user_id), "role": role, "exp": expire}
     return jwt.encode(data, SECRET_KEY, algorithm="HS256")
 
 
-# ---- REGISTER API ----
 @router.post("/register")
-def register(user: schemas.UserRegister, db: Session = Depends(get_db)):
-    
-    # Email already இருக்கா check பண்ணு
+def register(user: dict, db: Session = Depends(get_db)):
+    name = user.get("name", "").strip()
+    email = user.get("email", "").strip().lower()
+    password = user.get("password", "")
+    phone = user.get("phone", "")
+
+    if not name or not email or not password:
+        raise HTTPException(
+            status_code=400,
+            detail="Name, email and password are required!"
+        )
+
+    if len(password) < 6:
+        raise HTTPException(
+            status_code=400,
+            detail="Password must be at least 6 characters!"
+        )
+
     existing = db.query(models.User).filter(
-        models.User.email == user.email
+        models.User.email == email
     ).first()
-    
     if existing:
-        raise HTTPException(status_code=400, detail="Email already registered!")
-    
-    # Password hash பண்ணு (plain text store பண்ண வேண்டாம்)
-    hashed = hash_password(user.password)
-    
+        raise HTTPException(
+            status_code=400,
+            detail="Email already registered!"
+        )
+
     new_user = models.User(
-        name=user.name,
-        email=user.email,
-        password_hash=hashed,
-        phone=user.phone
+        name=name,
+        email=email,
+        password_hash=hash_password(password),
+        phone=phone,
+        role="customer"
     )
-    
     db.add(new_user)
     db.commit()
     db.refresh(new_user)
-    
-    return {"message": "Registration successful!", "user_id": new_user.id}
+
+    token = create_token(new_user.id, new_user.role)
+    return {
+        "message": "Registration successful!",
+        "token": token,
+        "name": new_user.name,
+        "role": new_user.role
+    }
 
 
-# ---- LOGIN API ----
 @router.post("/login")
-def login(user: schemas.UserLogin, db: Session = Depends(get_db)):
-    
+def login(user: dict, db: Session = Depends(get_db)):
+    email = user.get("email", "").strip().lower()
+    password = user.get("password", "")
+
+    if not email or not password:
+        raise HTTPException(
+            status_code=400,
+            detail="Email and password required!"
+        )
+
     db_user = db.query(models.User).filter(
-        models.User.email == user.email
+        models.User.email == email
     ).first()
-    
-    # User இல்லன்னா or password wrong-ஆ
-    if not db_user or not verify_password(user.password, db_user.password_hash):
-        raise HTTPException(status_code=401, detail="Wrong email or password!")
-    
+
+    if not db_user or not verify_password(password, db_user.password_hash):
+        raise HTTPException(
+            status_code=401,
+            detail="Wrong email or password!"
+        )
+
     token = create_token(db_user.id, db_user.role)
-    
     return {
         "token": token,
         "name": db_user.name,

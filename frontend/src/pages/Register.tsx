@@ -4,10 +4,7 @@ import { registerUser } from '../services/api';
 
 const Register = () => {
   const [form, setForm] = useState({
-    name: '',
-    email: '',
-    password: '',
-    phone: '',
+    name: '', email: '', password: '', phone: ''
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -22,12 +19,21 @@ const Register = () => {
       setError('Please fill all required fields!');
       return;
     }
+    if (form.password.length < 6) {
+      setError('Password must be at least 6 characters!');
+      return;
+    }
     setLoading(true);
     setError('');
     try {
-      await registerUser(form);
-      alert('Registration successful! Please login.');
-      navigate('/login');
+      const res = await registerUser(form);
+      // Auto login after register
+      localStorage.setItem('token', res.data.token);
+      localStorage.setItem('user', JSON.stringify({
+        name: res.data.name,
+        role: res.data.role
+      }));
+      navigate('/');
     } catch (err: any) {
       setError(err.response?.data?.detail || 'Registration failed!');
     } finally {
@@ -36,10 +42,9 @@ const Register = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center 
+    <div className="min-h-screen bg-gray-50 flex items-center
                     justify-center px-4">
       <div className="bg-white rounded-2xl shadow-lg p-8 w-full max-w-md">
-
         <div className="text-center mb-8">
           <p className="text-4xl mb-2">📚</p>
           <h1 className="text-2xl font-bold text-gray-800">
@@ -51,26 +56,25 @@ const Register = () => {
         </div>
 
         {error && (
-          <div className="bg-red-50 border border-red-200 text-red-600 
+          <div className="bg-red-50 border border-red-200 text-red-600
                           rounded-lg px-4 py-3 text-sm mb-4">
-            ❌ {error}
+            {error}
           </div>
         )}
 
         <div className="space-y-4">
           {[
             { label: 'Full Name *', name: 'name',
-              type: 'text', placeholder: 'Enter your name' },
-            { label: 'Email Address *', name: 'email',
-              type: 'email', placeholder: 'Enter your email' },
+              type: 'text', placeholder: 'Your name' },
+            { label: 'Email *', name: 'email',
+              type: 'email', placeholder: 'your@email.com' },
             { label: 'Password *', name: 'password',
-              type: 'password', placeholder: 'Create a password' },
-            { label: 'Phone Number', name: 'phone',
-              type: 'tel', placeholder: 'Enter phone (optional)' },
+              type: 'password', placeholder: 'Min 6 characters' },
+            { label: 'Phone', name: 'phone',
+              type: 'tel', placeholder: 'Optional' },
           ].map((field) => (
             <div key={field.name}>
-              <label className="text-sm font-medium text-gray-700 
-                                block mb-1">
+              <label className="text-sm font-medium text-gray-700 block mb-1">
                 {field.label}
               </label>
               <input
@@ -79,21 +83,19 @@ const Register = () => {
                 value={(form as any)[field.name]}
                 onChange={handleChange}
                 placeholder={field.placeholder}
-                className="w-full border border-gray-200 rounded-lg 
-                           px-4 py-3 text-sm focus:outline-none 
-                           focus:border-blue-500 transition-colors"
+                onKeyDown={(e) => e.key === 'Enter' && handleRegister()}
+                className="w-full border border-gray-200 rounded-lg
+                           px-4 py-3 text-sm focus:outline-none
+                           focus:border-blue-500"
               />
             </div>
           ))}
         </div>
 
-        <button
-          onClick={handleRegister}
-          disabled={loading}
-          className="w-full bg-blue-800 text-white py-3 rounded-lg 
-                     font-bold text-sm hover:bg-blue-700 
-                     disabled:bg-gray-300 transition-colors mt-6"
-        >
+        <button onClick={handleRegister} disabled={loading}
+          className="w-full bg-blue-800 text-white py-3 rounded-lg
+                     font-bold hover:bg-blue-700 disabled:bg-gray-300
+                     mt-6 transition-colors">
           {loading ? 'Creating Account...' : 'Register 🚀'}
         </button>
 

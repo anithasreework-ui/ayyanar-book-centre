@@ -2,7 +2,8 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from database import engine
 import models
-from routers import auth, products, chatbot, recommend, admin, orders
+from routers import (auth, products, chatbot, recommend,
+                     admin, orders, wholesale, excel_upload)
 
 models.Base.metadata.create_all(bind=engine)
 
@@ -22,10 +23,9 @@ app.include_router(chatbot.router)
 app.include_router(recommend.router)
 app.include_router(admin.router)
 app.include_router(orders.router)
+app.include_router(wholesale.router)
+app.include_router(excel_upload.router)
 
 @app.get("/")
 def home():
-    return {
-        "message": "Ayyanar Book Centre API Running!",
-        "version": "1.0.0"
-    }
+    return {"message": "Ayyanar Book Centre API Running! 🚀"}
