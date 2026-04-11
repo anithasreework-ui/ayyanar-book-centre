@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import axios from 'axios';
 
-const API = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+const API = 'https://ayyanar-book-centre-1.onrender.com';
 
-const STEPS = [
+const ONLINE_STEPS = [
   { label: 'Order Placed', icon: '📋' },
   { label: 'Confirmed', icon: '✅' },
   { label: 'Packed', icon: '📦' },
@@ -11,12 +11,19 @@ const STEPS = [
   { label: 'Delivered', icon: '🎉' },
 ];
 
-const STATUS_MAP: any = {
-  pending: 0,
-  confirmed: 1,
-  packed: 2,
-  shipped: 3,
-  delivered: 4
+const PICKUP_STEPS = [
+  { label: 'Order Placed', icon: '📋' },
+  { label: 'Confirmed', icon: '✅' },
+  { label: 'Ready for Pickup', icon: '🏪' },
+  { label: 'Collected', icon: '🎉' },
+];
+
+const STATUS_MAP_ONLINE: any = {
+  pending: 0, confirmed: 1, packed: 2, shipped: 3, delivered: 4
+};
+
+const STATUS_MAP_PICKUP: any = {
+  pending: 0, confirmed: 1, packed: 2, delivered: 3
 };
 
 const OrderTracking = () => {
@@ -27,22 +34,27 @@ const OrderTracking = () => {
 
   const handleTrack = async () => {
     if (!trackingId.trim()) {
-      setError('Please enter tracking ID!');
+      setError('Please enter tracking ID or OTP!');
       return;
     }
     setLoading(true);
     setError('');
     try {
-      const res = await axios.get(`${API}/orders/track/${trackingId}`);
+      const res = await axios.get(
+        `${API}/orders/track/${trackingId.trim().toUpperCase()}`
+      );
       setOrder(res.data);
     } catch {
-      setError('Tracking ID not found! Please check and try again.');
+      setError('ID not found! Please check and try again.');
       setOrder(null);
     } finally {
       setLoading(false);
     }
   };
 
+  const isPickup = order?.delivery_type === 'store_pickup';
+  const STEPS = isPickup ? PICKUP_STEPS : ONLINE_STEPS;
+  const STATUS_MAP = isPickup ? STATUS_MAP_PICKUP : STATUS_MAP_ONLINE;
   const currentStep = order ? (STATUS_MAP[order.status] ?? 0) : 0;
 
   return (
@@ -51,10 +63,10 @@ const OrderTracking = () => {
         Track Your Order
       </h1>
       <p className="text-gray-500 mb-8">
-        Enter your tracking ID to see order status
+        Enter your Tracking ID (OL-XXXX) or Store OTP (SP-XXXX)
       </p>
 
-      {/* Search Box */}
+      {/* Search */}
       <div className="bg-white rounded-2xl shadow-sm border
                       border-gray-100 p-6 mb-6">
         <div className="flex gap-3">
@@ -63,9 +75,10 @@ const OrderTracking = () => {
             value={trackingId}
             onChange={(e) => setTrackingId(e.target.value.toUpperCase())}
             onKeyDown={(e) => e.key === 'Enter' && handleTrack()}
-            placeholder="OL-1234 (Online) or SP-4582 (Store Pickup)"
+            placeholder="OL-1234 or SP-4582"
             className="flex-1 border border-gray-200 rounded-lg px-4 py-3
-                       text-sm focus:outline-none focus:border-blue-500"
+                       text-sm focus:outline-none focus:border-blue-500
+                       font-mono"
           />
           <button onClick={handleTrack} disabled={loading}
             className="bg-blue-800 text-white px-6 py-3 rounded-lg
@@ -74,65 +87,73 @@ const OrderTracking = () => {
           </button>
         </div>
         {error && (
-          <p className="text-red-500 text-sm mt-2">{error}</p>
+          <p className="text-red-500 text-sm mt-3 bg-red-50
+                        rounded-lg px-3 py-2">
+            ❌ {error}
+          </p>
         )}
       </div>
 
       {/* Result */}
       {order && (
         <div className="space-y-4">
+
+          {/* Store Pickup Card */}
+          {isPickup && (
+            <div className="bg-purple-50 border-2 border-purple-200
+                            rounded-2xl p-6 text-center">
+              <p className="text-xs text-purple-600 font-medium mb-1">
+                🏪 STORE PICKUP OTP
+              </p>
+              <p className="text-4xl font-bold text-purple-800
+                            tracking-widest mb-1">
+                {order.otp_code}
+              </p>
+              <p className="text-xs text-gray-500">
+                Show this OTP at Ayyanar Book Centre, Dindigul
+              </p>
+              <p className="text-xs text-gray-400 mt-1">
+                📞 +91 9894235330 | Mon-Sat: 9AM-8PM
+              </p>
+            </div>
+          )}
+
+          {/* Online Tracking Card */}
+          {!isPickup && order.tracking_id && (
+            <div className="bg-green-50 border-2 border-green-200
+                            rounded-2xl p-4 text-center">
+              <p className="text-xs text-green-600 font-medium mb-1">
+                🚚 TRACKING ID
+              </p>
+              <p className="text-2xl font-bold text-green-700
+                            tracking-widest">
+                {order.tracking_id}
+              </p>
+            </div>
+          )}
+
+          {/* Status Progress */}
           <div className="bg-white rounded-2xl shadow-sm border
                           border-gray-100 p-6">
-            <div className="flex justify-between items-center mb-6">
-              <div>
-                <p className="text-sm text-gray-500">
-                  {order.delivery_type === 'store_pickup'
-                    ? 'OTP Code'
-                  : 'Tracking ID'}
-                </p>
+            <h2 className="font-bold text-gray-800 mb-6">
+              Order Status
+            </h2>
 
-                <p className="font-bold text-gray-800 text-lg">
-                  {order.otp_code || order.tracking_id}
-                </p>
-              </div>
-              <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-                order.status === 'delivered'
-                  ? 'bg-green-100 text-green-700'
-                  : 'bg-yellow-100 text-yellow-700'
-              }`}>
-                {order.status.toUpperCase()}
-              </span>
-            </div>
-            {/*Store Pickup Special Card */}
-            {order.delivery_type === 'store_pickup' && (
-              <div className="bg-purple-50 border border-purple-200
-                        rounded-xl p-4 mb-4 text-center">
-                <p className="text-xs text-purple-600 font-medium mb-1">
-                   🏪 STORE PICKUP OTP
-                </p>
-                <p className="text-3xl font-bold text-purple-800
-                              tracking-widest">
-                   {order.otp_code}
-                </p>
-                <p className="text-xs text-gray-500 mt-2">
-                  Show this at Ayyanar Book Centre, Dindigul
-                </p>
-             </div>
-           )}
-
-            {/* Progress */}
             <div className="flex justify-between relative">
               <div className="absolute top-6 left-0 right-0 h-0.5
                               bg-gray-100 z-0" />
-              <div className="absolute top-6 left-0 h-0.5 bg-blue-800
-                              z-0 transition-all"
+              <div
+                className="absolute top-6 left-0 h-0.5 bg-blue-800
+                            z-0 transition-all"
                 style={{
                   width: `${(currentStep / (STEPS.length - 1)) * 100}%`
-                }} />
+                }}
+              />
               {STEPS.map((step, index) => (
                 <div key={step.label}
                   className="flex flex-col items-center text-center
-                             w-16 relative z-10">
+                             relative z-10"
+                  style={{ width: `${100 / STEPS.length}%` }}>
                   <div className={`w-12 h-12 rounded-full flex items-center
                                   justify-center text-xl mb-2 border-2 ${
                     index <= currentStep
@@ -141,7 +162,7 @@ const OrderTracking = () => {
                   }`}>
                     {step.icon}
                   </div>
-                  <p className={`text-xs font-medium ${
+                  <p className={`text-xs font-medium leading-tight ${
                     index <= currentStep
                       ? 'text-blue-800' : 'text-gray-400'
                   }`}>
@@ -151,7 +172,7 @@ const OrderTracking = () => {
               ))}
             </div>
 
-            <div className="mt-8 bg-blue-50 rounded-xl p-4 text-center">
+            <div className="mt-6 bg-blue-50 rounded-xl p-4 text-center">
               <p className="text-2xl mb-1">{STEPS[currentStep].icon}</p>
               <p className="font-bold text-blue-800">
                 {STEPS[currentStep].label}
@@ -159,47 +180,50 @@ const OrderTracking = () => {
             </div>
           </div>
 
+          {/* Order Details */}
           <div className="bg-white rounded-2xl shadow-sm border
                           border-gray-100 p-6">
             <h2 className="font-bold text-gray-800 mb-4">
-              Delivery Details
+              Order Details
             </h2>
             <div className="space-y-3 text-sm">
               <div className="flex justify-between">
                 <span className="text-gray-500">Order Date</span>
                 <span className="font-medium">
-                  {new Date(order.created_at).toLocaleDateString()}
+                  {new Date(order.created_at).toLocaleDateString('en-IN')}
                 </span>
               </div>
               <div className="flex justify-between">
-                <span className="text-gray-500">Delivery Type</span>
+                <span className="text-gray-500">Type</span>
                 <span className="font-medium">
-                  {order.delivery_type === 'store_pickup'
-                    ? '🏪 Store Pickup'
-                    : '🚚 Home Delivery'}
+                  {isPickup ? '🏪 Store Pickup' : '🚚 Home Delivery'}
                 </span>
               </div>
-              <div className="flex justify-between">
-                <span className="text-gray-500">
-                  {order.delivery_type === 'store_pickup'
-                    ? 'Pickup Location' : 'Address'}
+              {!isPickup && (
+                <div className="flex justify-between">
+                  <span className="text-gray-500">Delivery Address</span>
+                  <span className="font-medium text-right max-w-48 text-xs">
+                    {order.delivery_address}
+                  </span>
+                </div>
+              )}
+              <div className="flex justify-between border-t
+                              border-gray-100 pt-3">
+                <span className="text-gray-500 font-medium">
+                  Total Amount
                 </span>
-                <span className="font-medium text-right max-w-48">
-                  {order.delivery_address}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-500">Total Amount</span>
                 <span className="font-bold text-green-600">
                   Rs.{order.total_amount}
                 </span>
               </div>
             </div>
           </div>
+
           <div className="bg-yellow-50 rounded-xl p-4 text-sm text-center">
             <p className="font-medium text-gray-700">Need help?</p>
             <p className="text-gray-500 mt-1">
-              Call us: +91 9894235330
+              📞 +91 9894235330 &nbsp;|&nbsp;
+              ✉️ ayyanarbookcentredgl1@gmail.com
             </p>
           </div>
         </div>

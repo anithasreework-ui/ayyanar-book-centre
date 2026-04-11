@@ -13,43 +13,67 @@ const Navbar = () => {
     if (search.trim()) {
       navigate(`/products?search=${search}`);
       setSearch('');
+      setMenuOpen(false);
     }
   };
 
   const handleLogout = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
+    localStorage.removeItem('cart');
     navigate('/login');
   };
 
+  const NAV_LINKS = [
+    { to: '/products', icon: '📚', label: 'Products' },
+    { to: '/wholesale', icon: '🏭', label: 'Wholesale' },
+    { to: '/orders', icon: '📦', label: 'Track Order' },
+    { to: '/cart', icon: '🛒', label: 'Cart' },
+  ];
+
   return (
     <nav className="bg-blue-900 text-white shadow-lg sticky top-0 z-50">
-      {/* Top Bar */}
-      <div className="bg-blue-950 text-xs text-center py-1 text-blue-200">
-        📞 Customer Care: +91 9894235330 &nbsp;|&nbsp;
+
+      {/* Top Info Bar */}
+      <div className="bg-blue-950 text-xs text-center py-1
+                      text-blue-200 hidden md:block">
+        📞 +91 9894235330 &nbsp;|&nbsp;
         ✉️ ayyanarbookcentredgl1@gmail.com &nbsp;|&nbsp;
-        🕐 Mon-Sat: 9AM - 8PM
+        🕐 Mon-Sat: 9AM - 8PM &nbsp;|&nbsp;
+        📍 Dindigul, Tamil Nadu
       </div>
 
       <div className="max-w-7xl mx-auto px-4">
-        <div className="flex items-center justify-between h-16">
+        <div className="flex items-center justify-between h-16 gap-4">
 
           {/* Logo */}
-          <Link to="/" className="flex items-center gap-2">
-            <span className="text-2xl">📚</span>
-            <div>
-              <p className="font-bold text-lg leading-tight">
+          <Link to="/"
+            className="flex items-center gap-2 flex-shrink-0">
+            <div className="w-10 h-10 rounded-full border-2
+                            border-yellow-400 overflow-hidden
+                            flex-shrink-0">
+              <img
+                src="https://upload.wikimedia.org/wikipedia/commons/thumb/5/5e/Thiruvalluvar_statue.jpg/200px-Thiruvalluvar_statue.jpg"
+                alt="Logo"
+                className="w-full h-full object-cover"
+              />
+            </div>
+            <div className="hidden md:block">
+              <p className="font-bold text-sm leading-tight">
                 Ayyanar Book Centre
               </p>
               <p className="text-xs text-blue-300 leading-tight">
                 Dindigul, Tamil Nadu
               </p>
             </div>
+            <div className="block md:hidden">
+              <p className="font-bold text-sm">Ayyanar Books</p>
+            </div>
           </Link>
 
-          {/* Search */}
+          {/* Search Bar — Desktop */}
           <form onSubmit={handleSearch}
-            className="hidden md:flex flex-1 max-w-md mx-6">
+            className="hidden md:flex flex-1 max-w-md">
             <div className="flex w-full">
               <input
                 type="text"
@@ -57,11 +81,13 @@ const Navbar = () => {
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 className="flex-1 px-4 py-2 rounded-l-lg text-gray-800
-                           text-sm focus:outline-none"
+                           text-sm focus:outline-none focus:ring-2
+                           focus:ring-yellow-400"
               />
               <button type="submit"
                 className="bg-yellow-400 text-gray-900 px-4 py-2
-                           rounded-r-lg font-bold hover:bg-yellow-300">
+                           rounded-r-lg font-bold hover:bg-yellow-300
+                           transition-colors">
                 🔍
               </button>
             </div>
@@ -69,115 +95,140 @@ const Navbar = () => {
 
           {/* Desktop Nav Links */}
           <div className="hidden md:flex items-center gap-1">
-            {[
-              { to: '/products', icon: '📚', label: 'Products' },
-              { to: '/wholesale', icon: '🏭', label: 'Wholesale' },
-              { to: '/orders', icon: '📦', label: 'Track Order' },
-              { to: '/cart', icon: '🛒', label: 'Cart' },
-            ].map((item) => (
+            {NAV_LINKS.map((item) => (
               <Link key={item.to} to={item.to}
-                className="flex flex-col items-center px-3 py-1
+                className="flex flex-col items-center px-3 py-2
                            hover:bg-blue-800 rounded-lg transition-all
                            text-center min-w-14">
-                <span className="text-lg">{item.icon}</span>
-                <span className="text-xs">{item.label}</span>
+                <span className="text-lg leading-none">{item.icon}</span>
+                <span className="text-xs mt-0.5">{item.label}</span>
               </Link>
             ))}
 
+            {/* Admin Link */}
+            {token && user.role === 'admin' && (
+              <Link to="/admin"
+                className="flex flex-col items-center px-3 py-2
+                           hover:bg-yellow-600 bg-yellow-500
+                           rounded-lg transition-all text-center
+                           text-gray-900 min-w-14">
+                <span className="text-lg leading-none">⚙️</span>
+                <span className="text-xs mt-0.5 font-bold">Admin</span>
+              </Link>
+            )}
+
+            {/* Login / Logout */}
             {token ? (
-              <div className="flex flex-col items-center px-2">
-                {user.role === 'admin' && (
-                  <Link to="/admin"
-                    className="flex flex-col items-center px-3 py-1
-                               hover:bg-blue-800 rounded-lg transition-all">
-                    <span className="text-lg">⚙️</span>
-                    <span className="text-xs">Admin</span>
-                  </Link>
-                )}
+              <div className="flex flex-col items-center ml-1">
+                <span className="text-xs text-blue-300 truncate max-w-20">
+                  {user.name?.split(' ')[0]}
+                </span>
                 <button onClick={handleLogout}
-                  className="flex flex-col items-center px-3 py-1
-                             hover:bg-red-700 rounded-lg transition-all">
-                  <span className="text-lg">👤</span>
-                  <span className="text-xs">Logout</span>
+                  className="text-xs bg-red-600 hover:bg-red-500
+                             px-2 py-1 rounded transition-colors mt-0.5">
+                  Logout
                 </button>
               </div>
             ) : (
               <Link to="/login"
-                className="flex flex-col items-center px-3 py-1
+                className="flex flex-col items-center px-3 py-2
                            bg-yellow-400 text-gray-900 rounded-lg
-                           hover:bg-yellow-300 transition-all">
-                <span className="text-lg">👤</span>
-                <span className="text-xs font-bold">Login</span>
+                           hover:bg-yellow-300 transition-all
+                           min-w-14 ml-1">
+                <span className="text-lg leading-none">👤</span>
+                <span className="text-xs mt-0.5 font-bold">Login</span>
               </Link>
             )}
           </div>
 
-          {/* Mobile Hamburger */}
-          <button onClick={() => setMenuOpen(!menuOpen)}
-            className="md:hidden text-2xl">
-            {menuOpen ? '✕' : '☰'}
-          </button>
+          {/* Mobile Right Side */}
+          <div className="flex md:hidden items-center gap-2">
+            <Link to="/cart" className="text-xl">🛒</Link>
+            <button
+              onClick={() => setMenuOpen(!menuOpen)}
+              className="text-2xl p-1">
+              {menuOpen ? '✕' : '☰'}
+            </button>
+          </div>
+        </div>
+
+        {/* Mobile Search */}
+        <div className="md:hidden pb-2">
+          <form onSubmit={handleSearch} className="flex">
+            <input
+              type="text"
+              placeholder="Search books..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="flex-1 px-3 py-2 rounded-l text-gray-800
+                         text-sm focus:outline-none"
+            />
+            <button type="submit"
+              className="bg-yellow-400 text-gray-900 px-3 rounded-r
+                         font-bold">
+              🔍
+            </button>
+          </form>
         </div>
 
         {/* Mobile Menu */}
         {menuOpen && (
-          <div className="md:hidden pb-4 space-y-2">
-            <form onSubmit={handleSearch} className="flex mb-3">
-              <input type="text"
-                placeholder="Search books..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="flex-1 px-3 py-2 rounded-l text-gray-800 text-sm"
-              />
-              <button type="submit"
-                className="bg-yellow-400 text-gray-900 px-3 rounded-r">
-                🔍
-              </button>
-            </form>
+          <div className="md:hidden pb-4 border-t border-blue-800 pt-3">
 
-            {[
-              { to: '/', icon: '🏠', label: 'Home' },
-              { to: '/products', icon: '📚', label: 'Products' },
-              { to: '/wholesale', icon: '🏭', label: 'Wholesale' },
-              { to: '/orders', icon: '📦', label: 'Track Order' },
-              { to: '/cart', icon: '🛒', label: 'Cart' },
-            ].map((item) => (
-              <Link key={item.to} to={item.to}
-                onClick={() => setMenuOpen(false)}
-                className="flex items-center gap-3 px-4 py-2
-                           hover:bg-blue-800 rounded-lg">
-                <span>{item.icon}</span>
-                <span className="text-sm">{item.label}</span>
-              </Link>
-            ))}
+            {/* Top Info */}
+            <div className="bg-blue-950 rounded-lg p-3 mb-3 text-xs
+                            text-blue-200 space-y-1">
+              <p>📞 +91 9894235330</p>
+              <p>🕐 Mon-Sat: 9AM - 8PM</p>
+            </div>
 
-            {token ? (
-              <>
-                {user.role === 'admin' && (
-                  <Link to="/admin"
-                    onClick={() => setMenuOpen(false)}
-                    className="flex items-center gap-3 px-4 py-2
-                               hover:bg-blue-800 rounded-lg">
-                    <span>⚙️</span>
-                    <span className="text-sm">Admin Panel</span>
-                  </Link>
-                )}
-                <button onClick={handleLogout}
-                  className="flex items-center gap-3 px-4 py-2
-                             hover:bg-red-700 rounded-lg w-full">
-                  <span>👤</span>
-                  <span className="text-sm">Logout ({user.name})</span>
-                </button>
-              </>
-            ) : (
-              <Link to="/login"
-                onClick={() => setMenuOpen(false)}
-                className="flex items-center gap-3 px-4 py-2
-                           bg-yellow-400 text-gray-900 rounded-lg">
-                <span>👤</span>
-                <span className="text-sm font-bold">Login / Register</span>
-              </Link>
-            )}
+            {/* Nav Links */}
+            <div className="space-y-1">
+              {NAV_LINKS.map((item) => (
+                <Link key={item.to} to={item.to}
+                  onClick={() => setMenuOpen(false)}
+                  className="flex items-center gap-3 px-4 py-3
+                             hover:bg-blue-800 rounded-lg transition-all">
+                  <span className="text-xl">{item.icon}</span>
+                  <span className="font-medium">{item.label}</span>
+                </Link>
+              ))}
+
+              {/* Admin */}
+              {token && user.role === 'admin' && (
+                <Link to="/admin"
+                  onClick={() => setMenuOpen(false)}
+                  className="flex items-center gap-3 px-4 py-3
+                             bg-yellow-500 text-gray-900 rounded-lg">
+                  <span className="text-xl">⚙️</span>
+                  <span className="font-bold">Admin Panel</span>
+                </Link>
+              )}
+
+              {/* Login/Logout */}
+              {token ? (
+                <div>
+                  <div className="px-4 py-2 text-blue-300 text-sm">
+                    👤 {user.name}
+                  </div>
+                  <button onClick={handleLogout}
+                    className="flex items-center gap-3 px-4 py-3
+                               hover:bg-red-700 bg-red-600 rounded-lg
+                               w-full transition-all">
+                    <span className="text-xl">🚪</span>
+                    <span className="font-medium">Logout</span>
+                  </button>
+                </div>
+              ) : (
+                <Link to="/login"
+                  onClick={() => setMenuOpen(false)}
+                  className="flex items-center gap-3 px-4 py-3
+                             bg-yellow-400 text-gray-900 rounded-lg">
+                  <span className="text-xl">👤</span>
+                  <span className="font-bold">Login / Register</span>
+                </Link>
+              )}
+            </div>
           </div>
         )}
       </div>

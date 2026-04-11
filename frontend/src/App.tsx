@@ -10,6 +10,7 @@ import Cart from './pages/Cart';
 import Checkout from './pages/Checkout';
 import OrderTracking from './pages/OrderTracking';
 import Admin from './pages/Admin';
+import Terms from './pages/Terms';
 import Wholesale from './pages/Wholesale';
 
 function App() {
@@ -28,6 +29,7 @@ function App() {
           <Route path="/orders" element={<OrderTracking />} />
           <Route path="/admin" element={<Admin />} />
           <Route path="/wholesale" element={<Wholesale />} />
+          <Route path="/terms" element={<Terms />} />
         </Routes>
         <ChatBot />
       </div>

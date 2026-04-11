@@ -29,3 +29,13 @@ app.include_router(excel_upload.router)
 @app.get("/")
 def home():
     return {"message": "Ayyanar Book Centre API Running! 🚀"}
+@app.get("/ping")
+def ping():
+    return {"status": "alive", "shop": "Ayyanar Book Centre"}
+@app.get("/ping")
+def ping():
+    return {
+        "status": "alive",
+        "shop": "Ayyanar Book Centre",
+        "location": "Dindigul, Tamil Nadu"
+    }

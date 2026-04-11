@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import axios from 'axios';
 
-const API = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+const API = 'https://ayyanar-book-centre-1.onrender.com';
 
 const Wholesale = () => {
   const [form, setForm] = useState({

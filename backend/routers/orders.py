@@ -36,12 +36,35 @@ def generate_tracking_id():
     return "OL-" + "".join(random.choices(string.digits, k=4))
 
 
-def get_delivery_charge(subtotal: float, country: str) -> float:
-    if country != "India":
-        return 500.0
-    if subtotal >= 1000:
+def get_delivery_charge(
+    subtotal: float,
+    country: str,
+    weight_kg: float = 0.5
+) -> float:
+    # Store pickup — always free
+    if country == "PICKUP":
         return 0.0
-    return 50.0
+
+    # International orders
+    if country != "India":
+        if weight_kg <= 1:
+            return 800.0
+        else:
+            extra = weight_kg - 1
+            return 800.0 + (extra * 400.0)
+
+    # India — Weight based
+    if weight_kg <= 1:
+        return 0.0  # FREE under 1kg
+
+    elif weight_kg <= 2:
+        return 80.0
+
+    elif weight_kg <= 5:
+        return 150.0
+
+    else:
+        return 200.0
 
 
 @router.post("/")
@@ -61,24 +84,20 @@ def place_order(
         country_code = order_data.get("country_code", "+91")
         email = order_data.get("email", "")
 
+        # Basic validation
         if not items:
             raise HTTPException(
                 status_code=400,
                 detail="Cart is empty!"
             )
 
-        # Validate
-        if delivery_type == "store_pickup" and not phone:
+        if not phone:
             raise HTTPException(
                 status_code=400,
-                detail="Phone number mandatory for store pickup!"
+                detail="Phone number is required!"
             )
+
         if delivery_type == "home_delivery":
-            if not phone:
-                raise HTTPException(
-                    status_code=400,
-                    detail="Phone number is required!"
-                )
             if not delivery_address:
                 raise HTTPException(
                     status_code=400,
@@ -90,16 +109,27 @@ def place_order(
                     detail="Pincode is required!"
                 )
 
-        # Calculate subtotal
+        # Calculate subtotal + weight
         subtotal = 0.0
+        total_weight = 0.0
         valid_items = []
+
         for item in items:
             product = db.query(models.Product).filter(
-                models.Product.id == item.get("id")
+                models.Product.id == item.get("id"),
+                models.Product.is_available == True
             ).first()
-            if product and product.is_available:
+
+            if product:
                 qty = int(item.get("quantity", 1))
                 subtotal += product.price * qty
+
+                # Weight per product (default 0.3kg)
+                product_weight = getattr(
+                    product, 'weight_kg', 0.3
+                ) or 0.3
+                total_weight += product_weight * qty
+
                 valid_items.append({
                     "product": product,
                     "quantity": qty,
@@ -109,17 +139,19 @@ def place_order(
         if not valid_items:
             raise HTTPException(
                 status_code=400,
-                detail="No valid products found!"
+                detail="No valid products in cart!"
             )
 
-        # Delivery charge
+        # Calculate delivery charge
         delivery_charge = 0.0
         if delivery_type == "home_delivery":
-            delivery_charge = get_delivery_charge(subtotal, country)
+            delivery_charge = get_delivery_charge(
+                subtotal, country, total_weight
+            )
 
         total = subtotal + delivery_charge
 
-        # OTP / Tracking ID
+        # Generate OTP or Tracking ID
         otp_code = None
         tracking_id = None
         if delivery_type == "store_pickup":
@@ -133,7 +165,9 @@ def place_order(
             total_amount=total,
             status="pending",
             delivery_type=delivery_type,
-            delivery_address=delivery_address,
+            delivery_address=delivery_address
+                if delivery_type == "home_delivery"
+                else "Store Pickup - Ayyanar Book Centre, Dindigul",
             phone=phone,
             alt_phone=alt_phone,
             pincode=pincode,
@@ -144,7 +178,7 @@ def place_order(
             tracking_id=tracking_id
         )
         db.add(new_order)
-        db.flush()  # Get order ID
+        db.flush()
 
         # Save order items + reduce stock
         for vi in valid_items:
@@ -155,8 +189,11 @@ def place_order(
                 price=vi["price"]
             )
             db.add(order_item)
+
+            # Reduce stock
             vi["product"].stock_qty = max(
-                0, vi["product"].stock_qty - vi["quantity"]
+                0,
+                vi["product"].stock_qty - vi["quantity"]
             )
 
         db.commit()
@@ -165,9 +202,10 @@ def place_order(
         return {
             "message": "Order placed successfully!",
             "order_id": new_order.id,
-            "subtotal": subtotal,
-            "delivery_charge": delivery_charge,
-            "total": total,
+            "subtotal": round(subtotal, 2),
+            "total_weight_kg": round(total_weight, 2),
+            "delivery_charge": round(delivery_charge, 2),
+            "total": round(total, 2),
             "delivery_type": delivery_type,
             "otp_code": otp_code,
             "tracking_id": tracking_id,
@@ -209,21 +247,22 @@ def get_my_orders(
 
 @router.get("/track/{track_code}")
 def track_order(track_code: str, db: Session = Depends(get_db)):
+
     # Online tracking ID (OL-XXXX)
     order = db.query(models.Order).filter(
-        models.Order.tracking_id == track_code
+        models.Order.tracking_id == track_code.upper()
     ).first()
 
     # Store pickup OTP (SP-XXXX)
     if not order:
         order = db.query(models.Order).filter(
-            models.Order.otp_code == track_code
+            models.Order.otp_code == track_code.upper()
         ).first()
 
     if not order:
         raise HTTPException(
             status_code=404,
-            detail="Tracking ID / OTP not found! Please check and try again."
+            detail="Tracking ID or OTP not found! Please check again."
         )
 
     return {
@@ -232,7 +271,7 @@ def track_order(track_code: str, db: Session = Depends(get_db)):
         "order_id": order.id,
         "status": order.status,
         "delivery_type": order.delivery_type,
-        "delivery_address": order.delivery_address or "Store Pickup - Dindigul",
+        "delivery_address": order.delivery_address,
         "total_amount": order.total_amount,
         "phone": order.phone,
         "created_at": str(order.created_at)
