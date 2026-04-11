@@ -33,11 +33,14 @@ const TABS = [
   { key: 'add_product', icon: '➕', label: 'Add Product' },
   { key: 'excel_upload', icon: '📊', label: 'Excel Upload' },
   { key: 'wholesale', icon: '🏭', label: 'Wholesale Enquiries' },
+  { key: 'shop_settings', icon: '⚙️', label: 'Shop Settings' },
 ];
 
 const Admin = () => {
   const [products, setProducts] = useState([]);
   const [orders, setOrders] = useState([]);
+  const [shopSettings, setShopSettings] = useState<any>({});
+  const [settingsSaved, setSettingsSaved] = useState(false);
   const [stats, setStats] = useState<any>(null);
   const [enquiries, setEnquiries] = useState([]);
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -73,6 +76,20 @@ const Admin = () => {
       setProducts(pRes.data);
       setOrders(oRes.data);
       setStats(sRes.data);
+
+      // Settings fetch
+      try {
+        const setRes = await axios.get(
+          `${API}/settings/all`, { headers }
+        );
+        const settingsObj: any = {};
+        setRes.data.forEach((s: any) => {
+          settingsObj[s.key] = s.value;
+        });
+        setShopSettings(settingsObj);
+      } catch {
+        console.log('Settings fetch failed');
+      }
 
       // Wholesale enquiries
       try {
@@ -906,6 +923,125 @@ const Admin = () => {
                 .xlsx or .xls files only
               </p>
             </label>
+          </div>
+        )}
+
+        {/* ===== SHOP SETTINGS ===== */}
+        {activeTab === 'shop_settings' && (
+          <div className="max-w-2xl">
+            <div className="bg-white rounded-xl shadow-sm border
+                            border-gray-100 p-6">
+              <h2 className="text-xl font-bold mb-1">⚙️ Shop Settings</h2>
+              <p className="text-sm text-gray-500 mb-6">
+                Update shop info — changes reflect everywhere on website
+              </p>
+
+              {settingsSaved && (
+                <div className="bg-green-50 border border-green-200 rounded-xl
+                                p-3 mb-4 text-green-700 text-sm font-medium">
+                  ✅ Settings saved successfully!
+                </div>
+              )}
+
+              <div className="space-y-4">
+
+                {/* Main Shop Info */}
+                <div className="bg-blue-50 rounded-xl p-4">
+                  <p className="font-bold text-blue-800 mb-3 text-sm">
+                    🏪 Main Shop — Branch 1
+                  </p>
+                  <div className="space-y-3">
+                    {[
+                      { key: 'shop_name', label: 'Shop Name', type: 'text' },
+                      { key: 'shop_address', label: 'Shop Address', type: 'text' },
+                      { key: 'phone', label: 'Phone Number', type: 'text' },
+                      { key: 'customer_care', label: 'Customer Care Number',
+                        type: 'text' },
+                      { key: 'email', label: 'Email ID', type: 'email' },
+                      { key: 'instagram', label: 'Instagram Handle', type: 'text' },
+                      { key: 'working_hours', label: 'Working Hours', type: 'text' },
+                      { key: 'tagline', label: 'Shop Tagline', type: 'text' },
+                    ].map((field) => (
+                      <div key={field.key}>
+                        <label className="text-sm font-medium text-gray-700">
+                          {field.label}
+                        </label>
+                        <input
+                          type={field.type}
+                          value={shopSettings[field.key] || ''}
+                          onChange={(e) => setShopSettings({
+                            ...shopSettings,
+                            [field.key]: e.target.value
+                          })}
+                          className="w-full border rounded-lg px-3 py-2 mt-1
+                                     text-sm focus:outline-none
+                                     focus:border-blue-500"
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Branch 2 */}
+                <div className="bg-green-50 rounded-xl p-4">
+                  <p className="font-bold text-green-800 mb-1 text-sm">
+                    🏪 Branch 2 (Optional — Leave blank if not applicable)
+                  </p>
+                  <p className="text-xs text-gray-500 mb-3">
+                    Add new branch details here when you open a new branch!
+                  </p>
+                  <div className="space-y-3">
+                    {[
+                      { key: 'branch_2_name', label: 'Branch 2 Name',
+                        type: 'text', placeholder: 'e.g. Ayyanar Book Centre — Karur' },
+                      { key: 'branch_2_address', label: 'Branch 2 Address',
+                        type: 'text', placeholder: 'Full address with pincode' },
+                      { key: 'branch_2_phone', label: 'Branch 2 Phone',
+                        type: 'text', placeholder: '+91 XXXXXXXXXX' },
+                    ].map((field) => (
+                      <div key={field.key}>
+                        <label className="text-sm font-medium text-gray-700">
+                          {field.label}
+                        </label>
+                        <input
+                          type={field.type}
+                          value={shopSettings[field.key] || ''}
+                          placeholder={field.placeholder}
+                          onChange={(e) => setShopSettings({
+                            ...shopSettings,
+                            [field.key]: e.target.value
+                          })}
+                          className="w-full border rounded-lg px-3 py-2 mt-1
+                                     text-sm focus:outline-none
+                                     focus:border-green-500"
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Save Button */}
+                <button
+                  onClick={async () => {
+                    try {
+                      await axios.put(
+                        `${API}/settings/bulk-update`,
+                        { settings: shopSettings },
+                        { headers }
+                      );
+                      setSettingsSaved(true);
+                      setTimeout(() => setSettingsSaved(false), 3000);
+                    } catch {
+                      alert('Save failed!');
+                    }
+                  }}
+                  className="w-full bg-blue-800 text-white py-3 rounded-xl
+                             font-bold hover:bg-blue-700 transition-colors
+                             text-base">
+                  💾 Save All Settings
+                </button>
+              </div>
+            </div>
           </div>
         )}
 

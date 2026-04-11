@@ -5,7 +5,7 @@ import ProductCard from '../components/ProductCard';
 
 const CATEGORIES = [
   { label: 'State Board Textbooks & Guide', icon: '📗', value: 'state_board' },
-  { label: ' TNPSC Competitive books', icon: '📋', value: 'tnpsc' },
+  { label: ' TNPSC Competitive', icon: '📋', value: 'tnpsc' },
   { label: 'CBSE Textbooks & Guide', icon: '📘', value: 'cbse' },
   { label: 'Central Board Competitive', icon: '🏆', value: 'central_competitive' },
   { label: 'NCERT / NEET Books', icon: '📕', value: 'ncert' },
@@ -42,13 +42,13 @@ const Home = () => {
 
             {/* Thiruvalluvar Logo */}
             <div className="flex-shrink-0">
-              <div className="w-24 h-24 rounded-full border-4
+              <div className="w-28 h-28 rounded-full border-4
                               border-yellow-400 overflow-hidden
-                              shadow-xl bg-yellow-50">
+                              shadow-2xl bg-yellow-50">
                 <img
-                  src="https://upload.wikimedia.org/wikipedia/commons/thumb/5/5e/Thiruvalluvar_statue.jpg/200px-Thiruvalluvar_statue.jpg"
+                  src="/logo.jpg"
                   alt="Thiruvalluvar"
-                  className="w-full h-full object-cover"
+                  className="w-full h-full object-cover object-top"
                 />
               </div>
             </div>
@@ -60,7 +60,7 @@ const Home = () => {
               </h1>
               <p className="text-yellow-300 text-sm md:text-base
                             italic mb-1">
-                "கற்றதனால் ஆய பயனென்கொல்" — திருவள்ளுவர்
+                ""Knowledge is the floor of success"
               </p>
               <p className="text-blue-200 text-sm">
                 Dindigul's Most Trusted Bookshop

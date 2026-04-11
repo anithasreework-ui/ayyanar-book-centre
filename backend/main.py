@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from database import engine
 import models
 from routers import (auth, products, chatbot, recommend,
-                     admin, orders, wholesale, excel_upload)
+                     admin, orders, wholesale, excel_upload,settings)
 
 models.Base.metadata.create_all(bind=engine)
 
@@ -25,6 +25,7 @@ app.include_router(admin.router)
 app.include_router(orders.router)
 app.include_router(wholesale.router)
 app.include_router(excel_upload.router)
+app.include_router(settings.router)
 
 @app.get("/")
 def home():
