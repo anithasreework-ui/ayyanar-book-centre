@@ -5,7 +5,7 @@ import ProductCard from '../components/ProductCard';
 
 const CATEGORIES = [
   { label: 'State Board Textbooks & Guide', icon: '📗', value: 'state_board' },
-  { label: 'State Board TNPSC Competitive', icon: '📋', value: 'tnpsc' },
+  { label: ' TNPSC Competitive books', icon: '📋', value: 'tnpsc' },
   { label: 'CBSE Textbooks & Guide', icon: '📘', value: 'cbse' },
   { label: 'Central Board Competitive', icon: '🏆', value: 'central_competitive' },
   { label: 'NCERT / NEET Books', icon: '📕', value: 'ncert' },
