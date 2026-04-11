@@ -5,13 +5,19 @@ import { getProducts, searchProducts } from '../services/api';
 
 const CATEGORIES = [
   { label: '📋 All', value: '' },
-  { label: '📘 TNPSC', value: 'tnpsc' },
-  { label: '📗 NCERT', value: 'ncert' },
-  { label: '💪 Motivational', value: 'motivational' },
-  { label: '📖 Novels', value: 'novels' },
+  { label: '📗 State Board Textbooks', value: 'state_board' },
+  { label: '📘 CBSE Books & Guides', value: 'cbse' },
+  { label: '📋 TNPSC Competitive Books', value: 'tnpsc' },
+  { label: '📕 NCERT / NEET Books', value: 'ncert' },
+  { label: '🏥 Medical Books', value: 'medical' },
   { label: '✏️ Stationery', value: 'stationery' },
-  { label: '🎒 School Accessories', value: 'school_accessories' },
   { label: '👶 Children Books', value: 'children' },
+  { label: '📖 Novels', value: 'novels' },
+  { label: '💪 Motivational Books', value: 'motivational' },
+  { label: '🎁 Gifts & Hampers', value: 'gifts' },
+  { label: '🔬 School Projects', value: 'projects' },
+  { label: '🎯 Combos', value: 'combos' },
+  { label: '🏭 Wholesale', value: 'wholesale' },
 ];
 
 const Products = () => {

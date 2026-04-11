@@ -5,11 +5,21 @@ import axios from 'axios';
 const API = 'https://ayyanar-book-centre-1.onrender.com';
 
 const CATEGORIES = [
-  'state_board', 'cbse', 'tn_textbook', 'tnpsc', 'ncert',
-  'medical', 'notebooks', 'stationery', 'children', 'novels',
-  'motivational', 'gifts', 'projects', 'school_accessories',
-  'combos', 'wholesale'
+  'state_board',
+  'cbse',
+  'tnpsc',
+  'ncert',
+  'medical',
+  'stationery',
+  'children',
+  'novels',
+  'motivational',
+  'gifts',
+  'projects',
+  'combos',
+  'wholesale',
 ];
+
 
 const STATUS_OPTIONS = [
   'pending', 'confirmed', 'packed', 'shipped', 'delivered', 'cancelled'
