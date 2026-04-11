@@ -4,24 +4,21 @@ import { getProducts } from '../services/api';
 import ProductCard from '../components/ProductCard';
 
 const CATEGORIES = [
-  { label: 'State Board', icon: '📗', value: 'state_board' },
-  { label: 'CBSE Books', icon: '📘', value: 'cbse' },
-  { label: 'TN Textbooks', icon: '📙', value: 'tn_textbook' },
-  { label: 'TNPSC', icon: '📋', value: 'tnpsc' },
-  { label: 'NCERT', icon: '📕', value: 'ncert' },
+  { label: 'State Board Textbooks & Guide', icon: '📗', value: 'state_board' },
+  { label: 'State Board TNPSC Competitive', icon: '📋', value: 'tnpsc' },
+  { label: 'CBSE Textbooks & Guide', icon: '📘', value: 'cbse' },
+  { label: 'Central Board Competitive', icon: '🏆', value: 'central_competitive' },
+  { label: 'NCERT / NEET Books', icon: '📕', value: 'ncert' },
   { label: 'Medical Books', icon: '🏥', value: 'medical' },
-  { label: 'Notebooks', icon: '📓', value: 'notebooks' },
   { label: 'Stationery', icon: '✏️', value: 'stationery' },
   { label: 'Children Books', icon: '👶', value: 'children' },
   { label: 'Novels', icon: '📖', value: 'novels' },
-  { label: 'Motivational', icon: '💪', value: 'motivational' },
+  { label: 'Motivational Books', icon: '💪', value: 'motivational' },
   { label: 'Gifts & Hampers', icon: '🎁', value: 'gifts' },
   { label: 'School Projects', icon: '🔬', value: 'projects' },
-  { label: 'School Bags', icon: '🎒', value: 'school_accessories' },
   { label: 'Combos', icon: '🎯', value: 'combos' },
   { label: 'Wholesale', icon: '🏭', value: 'wholesale' },
 ];
-
 const Home = () => {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);

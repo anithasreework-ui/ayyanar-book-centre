@@ -4,10 +4,11 @@ import ProductCard from '../components/ProductCard';
 import { getProducts, searchProducts } from '../services/api';
 
 const CATEGORIES = [
-  { label: '📋 All', value: '' },
-  { label: '📗 State Board Textbooks', value: 'state_board' },
-  { label: '📘 CBSE Books & Guides', value: 'cbse' },
-  { label: '📋 TNPSC Competitive Books', value: 'tnpsc' },
+  { label: '📋 All Products', value: '' },
+  { label: '📗 State Board Textbooks & Guide', value: 'state_board' },
+  { label: '📋 State Board (TNPSC) Competitive', value: 'tnpsc' },
+  { label: '📘 CBSE Textbooks & Guide', value: 'cbse' },
+  { label: '🏆 Central Board Competitive Books', value: 'central_competitive' },
   { label: '📕 NCERT / NEET Books', value: 'ncert' },
   { label: '🏥 Medical Books', value: 'medical' },
   { label: '✏️ Stationery', value: 'stationery' },

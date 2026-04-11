@@ -34,12 +34,12 @@ const Navbar = () => {
   return (
     <nav className="bg-blue-900 text-white shadow-lg sticky top-0 z-50">
 
-      {/* Top Info Bar */}
+      {/* Top Info Bar — Desktop */}
       <div className="bg-blue-950 text-xs text-center py-1
                       text-blue-200 hidden md:block">
         📞 +91 9894235330 &nbsp;|&nbsp;
         ✉️ ayyanarbookcentredgl1@gmail.com &nbsp;|&nbsp;
-        🕐 Mon-Sat: 9AM - 8PM &nbsp;|&nbsp;
+        🕐 Mon–Sat: 9AM–8PM &nbsp;|&nbsp;
         📍 Dindigul, Tamil Nadu
       </div>
 
@@ -51,11 +51,16 @@ const Navbar = () => {
             className="flex items-center gap-2 flex-shrink-0">
             <div className="w-10 h-10 rounded-full border-2
                             border-yellow-400 overflow-hidden
-                            flex-shrink-0">
+                            flex-shrink-0 bg-yellow-50">
               <img
-                src="https://upload.wikimedia.org/wikipedia/commons/thumb/5/5e/Thiruvalluvar_statue.jpg/200px-Thiruvalluvar_statue.jpg"
-                alt="Logo"
+                src="/logo.jpg"
+                alt="Thiruvalluvar - Ayyanar Book Centre"
                 className="w-full h-full object-cover"
+                onError={(e: any) => {
+                  e.target.style.display = 'none';
+                  e.target.parentElement.innerHTML =
+                    '<span style="font-size:20px;display:flex;align-items:center;justify-content:center;height:100%">📚</span>';
+                }}
               />
             </div>
             <div className="hidden md:block">
@@ -67,7 +72,9 @@ const Navbar = () => {
               </p>
             </div>
             <div className="block md:hidden">
-              <p className="font-bold text-sm">Ayyanar Books</p>
+              <p className="font-bold text-sm leading-tight">
+                Ayyanar Books
+              </p>
             </div>
           </Link>
 
@@ -105,21 +112,32 @@ const Navbar = () => {
               </Link>
             ))}
 
+            {/* My Orders — Login users only */}
+            {token && (
+              <Link to="/my-orders"
+                className="flex flex-col items-center px-3 py-2
+                           hover:bg-blue-800 rounded-lg transition-all
+                           text-center min-w-14">
+                <span className="text-lg leading-none">📋</span>
+                <span className="text-xs mt-0.5">My Orders</span>
+              </Link>
+            )}
+
             {/* Admin Link */}
             {token && user.role === 'admin' && (
               <Link to="/admin"
                 className="flex flex-col items-center px-3 py-2
-                           hover:bg-yellow-600 bg-yellow-500
-                           rounded-lg transition-all text-center
-                           text-gray-900 min-w-14">
+                           bg-yellow-500 hover:bg-yellow-400 rounded-lg
+                           transition-all text-center text-gray-900
+                           min-w-14">
                 <span className="text-lg leading-none">⚙️</span>
                 <span className="text-xs mt-0.5 font-bold">Admin</span>
               </Link>
             )}
 
-            {/* Login / Logout */}
+            {/* Login / User */}
             {token ? (
-              <div className="flex flex-col items-center ml-1">
+              <div className="flex flex-col items-center ml-1 px-2">
                 <span className="text-xs text-blue-300 truncate max-w-20">
                   {user.name?.split(' ')[0]}
                 </span>
@@ -133,17 +151,17 @@ const Navbar = () => {
               <Link to="/login"
                 className="flex flex-col items-center px-3 py-2
                            bg-yellow-400 text-gray-900 rounded-lg
-                           hover:bg-yellow-300 transition-all
-                           min-w-14 ml-1">
+                           hover:bg-yellow-300 transition-all min-w-14
+                           ml-1">
                 <span className="text-lg leading-none">👤</span>
                 <span className="text-xs mt-0.5 font-bold">Login</span>
               </Link>
             )}
           </div>
 
-          {/* Mobile Right Side */}
+          {/* Mobile Right */}
           <div className="flex md:hidden items-center gap-2">
-            <Link to="/cart" className="text-xl">🛒</Link>
+            <Link to="/cart" className="text-2xl">🛒</Link>
             <button
               onClick={() => setMenuOpen(!menuOpen)}
               className="text-2xl p-1">
@@ -164,8 +182,8 @@ const Navbar = () => {
                          text-sm focus:outline-none"
             />
             <button type="submit"
-              className="bg-yellow-400 text-gray-900 px-3 rounded-r
-                         font-bold">
+              className="bg-yellow-400 text-gray-900 px-4 rounded-r
+                         font-bold hover:bg-yellow-300">
               🔍
             </button>
           </form>
@@ -175,15 +193,18 @@ const Navbar = () => {
         {menuOpen && (
           <div className="md:hidden pb-4 border-t border-blue-800 pt-3">
 
-            {/* Top Info */}
-            <div className="bg-blue-950 rounded-lg p-3 mb-3 text-xs
-                            text-blue-200 space-y-1">
-              <p>📞 +91 9894235330</p>
-              <p>🕐 Mon-Sat: 9AM - 8PM</p>
+            {/* Contact Info */}
+            <div className="bg-blue-950 rounded-lg p-3 mb-3">
+              <p className="text-xs text-blue-200">
+                📞 +91 9894235330
+              </p>
+              <p className="text-xs text-blue-200 mt-0.5">
+                🕐 Mon–Sat: 9AM–8PM
+              </p>
             </div>
 
-            {/* Nav Links */}
             <div className="space-y-1">
+              {/* All Nav Links */}
               {NAV_LINKS.map((item) => (
                 <Link key={item.to} to={item.to}
                   onClick={() => setMenuOpen(false)}
@@ -193,6 +214,17 @@ const Navbar = () => {
                   <span className="font-medium">{item.label}</span>
                 </Link>
               ))}
+
+              {/* My Orders */}
+              {token && (
+                <Link to="/my-orders"
+                  onClick={() => setMenuOpen(false)}
+                  className="flex items-center gap-3 px-4 py-3
+                             hover:bg-blue-800 rounded-lg transition-all">
+                  <span className="text-xl">📋</span>
+                  <span className="font-medium">My Orders</span>
+                </Link>
+              )}
 
               {/* Admin */}
               {token && user.role === 'admin' && (
@@ -205,7 +237,7 @@ const Navbar = () => {
                 </Link>
               )}
 
-              {/* Login/Logout */}
+              {/* Login / Logout */}
               {token ? (
                 <div>
                   <div className="px-4 py-2 text-blue-300 text-sm">
@@ -213,7 +245,7 @@ const Navbar = () => {
                   </div>
                   <button onClick={handleLogout}
                     className="flex items-center gap-3 px-4 py-3
-                               hover:bg-red-700 bg-red-600 rounded-lg
+                               bg-red-600 hover:bg-red-700 rounded-lg
                                w-full transition-all">
                     <span className="text-xl">🚪</span>
                     <span className="font-medium">Logout</span>

@@ -6,8 +6,9 @@ const API = 'https://ayyanar-book-centre-1.onrender.com';
 
 const CATEGORIES = [
   'state_board',
-  'cbse',
   'tnpsc',
+  'cbse',
+  'central_competitive',
   'ncert',
   'medical',
   'stationery',
