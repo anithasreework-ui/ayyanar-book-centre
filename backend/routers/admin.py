@@ -151,3 +151,22 @@ def get_stats(
         "total_revenue": total_revenue,
         "pending_orders": pending
     }
+@router.get("/wholesale-enquiries")
+def get_wholesale_enquiries(
+    db: Session = Depends(get_db),
+    admin=Depends(get_admin_user)
+):
+    enquiries = db.query(models.WholesaleEnquiry).order_by(
+        models.WholesaleEnquiry.created_at.desc()
+    ).all()
+    result = []
+    for e in enquiries:
+        result.append({
+            "id": e.id,
+            "store_name": e.store_name,
+            "name": e.name,
+            "phone": e.phone,
+            "message": e.message,
+            "created_at": str(e.created_at)
+        })
+    return result

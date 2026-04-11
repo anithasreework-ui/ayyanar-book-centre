@@ -63,7 +63,7 @@ const OrderTracking = () => {
             value={trackingId}
             onChange={(e) => setTrackingId(e.target.value.toUpperCase())}
             onKeyDown={(e) => e.key === 'Enter' && handleTrack()}
-            placeholder="Enter tracking ID (e.g. OL-1234)"
+            placeholder="OL-1234 (Online) or SP-4582 (Store Pickup)"
             className="flex-1 border border-gray-200 rounded-lg px-4 py-3
                        text-sm focus:outline-none focus:border-blue-500"
           />
@@ -85,9 +85,14 @@ const OrderTracking = () => {
                           border-gray-100 p-6">
             <div className="flex justify-between items-center mb-6">
               <div>
-                <p className="text-sm text-gray-500">Tracking ID</p>
+                <p className="text-sm text-gray-500">
+                  {order.delivery_type === 'store_pickup'
+                    ? 'OTP Code'
+                  : 'Tracking ID'}
+                </p>
+
                 <p className="font-bold text-gray-800 text-lg">
-                  {order.tracking_id}
+                  {order.otp_code || order.tracking_id}
                 </p>
               </div>
               <span className={`px-3 py-1 rounded-full text-sm font-medium ${
@@ -98,6 +103,22 @@ const OrderTracking = () => {
                 {order.status.toUpperCase()}
               </span>
             </div>
+            {/*Store Pickup Special Card */}
+            {order.delivery_type === 'store_pickup' && (
+              <div className="bg-purple-50 border border-purple-200
+                        rounded-xl p-4 mb-4 text-center">
+                <p className="text-xs text-purple-600 font-medium mb-1">
+                   🏪 STORE PICKUP OTP
+                </p>
+                <p className="text-3xl font-bold text-purple-800
+                              tracking-widest">
+                   {order.otp_code}
+                </p>
+                <p className="text-xs text-gray-500 mt-2">
+                  Show this at Ayyanar Book Centre, Dindigul
+                </p>
+             </div>
+           )}
 
             {/* Progress */}
             <div className="flex justify-between relative">
@@ -151,18 +172,34 @@ const OrderTracking = () => {
                 </span>
               </div>
               <div className="flex justify-between">
-                <span className="text-gray-500">Delivery Address</span>
+                <span className="text-gray-500">Delivery Type</span>
+                <span className="font-medium">
+                  {order.delivery_type === 'store_pickup'
+                    ? '🏪 Store Pickup'
+                    : '🚚 Home Delivery'}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-500">
+                  {order.delivery_type === 'store_pickup'
+                    ? 'Pickup Location' : 'Address'}
+                </span>
                 <span className="font-medium text-right max-w-48">
-                  {order.delivery_address || 'Store Pickup'}
+                  {order.delivery_address}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-500">Total Amount</span>
+                <span className="font-bold text-green-600">
+                  Rs.{order.total_amount}
                 </span>
               </div>
             </div>
           </div>
-
           <div className="bg-yellow-50 rounded-xl p-4 text-sm text-center">
             <p className="font-medium text-gray-700">Need help?</p>
             <p className="text-gray-500 mt-1">
-              Call us: +91 XXXXXXXXXX
+              Call us: +91 9894235330
             </p>
           </div>
         </div>

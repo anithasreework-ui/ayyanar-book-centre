@@ -17,6 +17,7 @@ const STATUS_OPTIONS = [
 
 const Admin = () => {
   const [products, setProducts] = useState([]);
+  const [enquiries, setEnquiries] = useState([]);
   const [orders, setOrders] = useState([]);
   const [stats, setStats] = useState<any>(null);
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -43,14 +44,17 @@ const Admin = () => {
 
   const fetchAll = async () => {
     try {
-      const [pRes, oRes, sRes] = await Promise.all([
+      const [pRes, oRes, sRes, eRes ] = await Promise.all([
         axios.get(`${API}/products/`),
         axios.get(`${API}/admin/orders`, { headers }),
         axios.get(`${API}/admin/stats`, { headers }),
+        axios.get(`${API}/admin/wholesale-enquiries`, { headers }),
       ]);
       setProducts(pRes.data);
       setOrders(oRes.data);
       setStats(sRes.data);
+      setEnquiries(eRes.data);
+
     } catch (err) {
       console.log('Fetch error', err);
     }
@@ -155,6 +159,7 @@ const Admin = () => {
     { key: 'products', icon: '📚', label: 'Products' },
     { key: 'add_product', icon: '➕', label: 'Add Product' },
     { key: 'excel_upload', icon: '📊', label: 'Excel Upload' },
+    { key: 'wholesale', icon: '🏭', label: 'Wholesale Enquiries' },
   ];
 
   return (
@@ -643,6 +648,58 @@ const Admin = () => {
             </label>
           </div>
         )}
+        {/* Wholesale update */}
+        {activeTab === 'wholesale' && (
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100">
+           <div className="p-4 border-b">
+             <h2 className="text-lg font-bold">
+               Wholesale Enquiries ({enquiries.length})
+             </h2>
+           </div>
+           {enquiries.length === 0 ? (
+             <p className="text-center text-gray-400 py-10">
+              No enquiries yet!
+             </p>
+           ) : (
+             <div className="overflow-x-auto">
+               <table className="w-full text-sm">
+                 <thead className="bg-gray-50">
+                  <tr>
+                    {['#', 'Store Name', 'Contact', 'Phone',
+                      'Message', 'Date'].map((h) => (
+                       <th key={h}
+                        className="text-left p-3 text-gray-600 font-medium">
+                        {h}
+                      </th>
+                     ))}
+                     </tr>
+                  </thead>
+                  <tbody>
+                    {enquiries.map((e: any) => (
+                      <tr key={e.id} className="border-t hover:bg-gray-50">
+                        <td className="p-3 font-bold text-blue-800">#{e.id}</td>
+                        <td className="p-3 font-medium">
+                          {e.store_name || '-'}
+                        </td>
+                        <td className="p-3">{e.name}</td>
+                        <td className="p-3 text-blue-700 font-medium">
+                          {e.phone}
+                        </td>
+                        <td className="p-3 text-gray-600 max-w-48">
+                          <p className="truncate">{e.message || '-'}</p>
+                        </td>
+                        <td className="p-3 text-gray-400 text-xs">
+                          {new Date(e.created_at).toLocaleDateString()}
+                        </td>
+                     </tr>
+                   ))}
+                </tbody>
+              </table>
+            </div>
+           )}
+          </div>
+        )}
+        
       </div>
     </div>
   );

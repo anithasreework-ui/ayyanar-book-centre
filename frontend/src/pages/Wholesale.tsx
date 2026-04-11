@@ -47,9 +47,9 @@ const Wholesale = () => {
               {[
                 { icon: '🏪', label: 'Ayyanar Book Centre' },
                 { icon: '📍', label: 'Dindigul, Tamil Nadu - 624 001' },
-                { icon: '📞', label: '+91 XXXXXXXXXX' },
-                { icon: '📱', label: 'Customer Care: +91 XXXXXXXXXX' },
-                { icon: '✉️', label: 'ayyanarbookcentre@gmail.com' },
+                { icon: '📞', label: '+91 9894235330' },
+                { icon: '📱', label: 'Customer Care: +91 9894235330' },
+                { icon: '✉️', label: 'ayyanarbookcentredgl1@gmail.com' },
                 { icon: '📸', label: '@ayyanarbookcentre' },
               ].map((item) => (
                 <div key={item.label} className="flex items-center gap-3">
@@ -96,7 +96,7 @@ const Wholesale = () => {
                 We will contact you within 24 hours.
               </p>
               <p className="text-sm text-blue-700 mt-4 font-medium">
-                Call us: +91 XXXXXXXXXX
+                Call us: +91 9894235330
               </p>
             </div>
           ) : (
