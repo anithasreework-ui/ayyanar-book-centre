@@ -2,10 +2,13 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getProducts } from '../services/api';
 import ProductCard from '../components/ProductCard';
+import axios from 'axios';
+
+const API = 'https://ayyanar-book-centre-1.onrender.com';
 
 const CATEGORIES = [
   { label: 'State Board Textbooks & Guide', icon: '📗', value: 'state_board' },
-  { label: ' TNPSC Competitive', icon: '📋', value: 'tnpsc' },
+  { label: 'State Board TNPSC Competitive', icon: '📋', value: 'tnpsc' },
   { label: 'CBSE Textbooks & Guide', icon: '📘', value: 'cbse' },
   { label: 'Central Board Competitive', icon: '🏆', value: 'central_competitive' },
   { label: 'NCERT / NEET Books', icon: '📕', value: 'ncert' },
@@ -19,23 +22,47 @@ const CATEGORIES = [
   { label: 'Combos', icon: '🎯', value: 'combos' },
   { label: 'Wholesale', icon: '🏭', value: 'wholesale' },
 ];
+
 const Home = () => {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [settings, setSettings] = useState<any>({
+    shop_name: 'Ayyanar Book Centre',
+    phone: '+91 9894235330',
+    customer_care: '+91 9894235330',
+    email: 'ayyanarbookcentredgl1@gmail.com',
+    instagram: '@ayyanarbookcentre',
+    shop_address: 'Dindigul, Tamil Nadu, India - 624 001',
+    working_hours: 'Monday to Saturday, 9:00 AM to 8:00 PM',
+    tagline: 'Knowledge is the floor of success',
+    branch_2_name: '',
+    branch_2_address: '',
+    branch_2_phone: '',
+  });
   const navigate = useNavigate();
 
   useEffect(() => {
+    // Products load
     getProducts()
       .then((res) => setProducts(res.data))
       .finally(() => setLoading(false));
+
+    // Settings load from DB
+    axios.get(`${API}/settings/public`)
+      .then((res) => {
+        if (res.data) setSettings(res.data);
+      })
+      .catch(() => {});
   }, []);
 
   return (
     <div className="min-h-screen bg-gray-50">
 
-      {/* Hero Banner */}
-      <div className="bg-gradient-to-r from-blue-900 via-blue-800
-                      to-blue-700 text-white py-14 px-4">
+      {/* Hero Banner — Dark Green Theme */}
+      <div className="text-white py-14 px-4"
+        style={{
+          background: 'linear-gradient(135deg, #1a4a2e 0%, #2d7a4f 50%, #1a4a2e 100%)'
+        }}>
         <div className="max-w-5xl mx-auto">
           <div className="flex flex-col md:flex-row items-center
                           justify-center gap-6 mb-6">
@@ -49,6 +76,11 @@ const Home = () => {
                   src="/logo.jpg"
                   alt="Thiruvalluvar"
                   className="w-full h-full object-cover object-top"
+                  onError={(e: any) => {
+                    e.target.style.display = 'none';
+                    e.target.parentElement.innerHTML =
+                      '<div style="display:flex;align-items:center;justify-content:center;height:100%;font-size:48px">📚</div>';
+                  }}
                 />
               </div>
             </div>
@@ -56,19 +88,19 @@ const Home = () => {
             {/* Title */}
             <div className="text-center md:text-left">
               <h1 className="text-4xl md:text-5xl font-bold mb-1">
-                Ayyanar Book Centre
+                {settings.shop_name || 'Ayyanar Book Centre'}
               </h1>
               <p className="text-yellow-300 text-sm md:text-base
                             italic mb-1">
-                ""Knowledge is the floor of success"
+                "{settings.tagline || 'Knowledge is the floor of success'}"
               </p>
-              <p className="text-blue-200 text-sm">
+              <p className="text-green-200 text-sm">
                 Dindigul's Most Trusted Bookshop
               </p>
             </div>
           </div>
 
-          <p className="text-center text-blue-100 mb-2">
+          <p className="text-center text-green-100 mb-2">
             Books • Stationery • School Accessories • Worldwide Delivery
           </p>
 
@@ -78,15 +110,15 @@ const Home = () => {
               className="bg-yellow-400 text-gray-900 px-8 py-3
                          rounded-full font-bold text-lg
                          hover:bg-yellow-300 transition-all
-                         hover:scale-105">
+                         hover:scale-105 shadow-lg">
               Shop Now →
             </button>
             <button
               onClick={() => navigate('/wholesale')}
-              className="bg-transparent border-2 border-white
-                         text-white px-6 py-3 rounded-full
-                         font-bold hover:bg-white
-                         hover:text-blue-900 transition-all">
+              className="bg-transparent border-2 border-yellow-400
+                         text-yellow-400 px-6 py-3 rounded-full
+                         font-bold hover:bg-yellow-400
+                         hover:text-gray-900 transition-all">
               Wholesale
             </button>
           </div>
@@ -94,7 +126,8 @@ const Home = () => {
       </div>
 
       {/* Features Strip */}
-      <div className="bg-blue-800 text-white py-3 px-4">
+      <div className="text-white py-3 px-4"
+        style={{ background: '#1a4a2e' }}>
         <div className="max-w-5xl mx-auto flex justify-center
                         flex-wrap gap-6 text-xs md:text-sm">
           {[
@@ -106,7 +139,7 @@ const Home = () => {
             <div key={item.text}
               className="flex items-center gap-1">
               <span>{item.icon}</span>
-              <span className="text-blue-100">{item.text}</span>
+              <span className="text-green-100">{item.text}</span>
             </div>
           ))}
         </div>
@@ -122,23 +155,21 @@ const Home = () => {
             </h2>
             <button
               onClick={() => navigate('/products')}
-              className="text-blue-700 text-sm hover:underline">
+              className="text-green-700 text-sm hover:underline font-medium">
               View All →
             </button>
           </div>
 
-          <div className="grid grid-cols-4 md:grid-cols-8 gap-2">
+          <div className="grid grid-cols-4 md:grid-cols-7 gap-2">
             {CATEGORIES.map((cat) => (
               <button
                 key={cat.value}
-                onClick={() =>
-                  navigate(`/products?category=${cat.value}`)
-                }
+                onClick={() => navigate(`/products?category=${cat.value}`)}
                 className="flex flex-col items-center bg-white
-                           hover:bg-blue-50 border border-gray-100
-                           hover:border-blue-300 rounded-xl p-2
-                           text-center transition-all hover:-translate-y-1
-                           shadow-sm group">
+                           hover:bg-green-50 border border-gray-100
+                           hover:border-green-400 rounded-xl p-2
+                           text-center transition-all
+                           hover:-translate-y-1 shadow-sm group">
                 <span className="text-2xl mb-1 group-hover:scale-110
                                  transition-transform">
                   {cat.icon}
@@ -160,7 +191,7 @@ const Home = () => {
             </h2>
             <button
               onClick={() => navigate('/products')}
-              className="text-blue-700 text-sm hover:underline">
+              className="text-green-700 text-sm hover:underline font-medium">
               View All →
             </button>
           </div>
@@ -174,9 +205,13 @@ const Home = () => {
           ) : products.length === 0 ? (
             <div className="text-center py-16">
               <p className="text-5xl mb-4">📚</p>
-              <p className="text-gray-500">
-                Products coming soon!
-              </p>
+              <p className="text-gray-500">Products coming soon!</p>
+              <button
+                onClick={() => navigate('/admin')}
+                className="mt-4 bg-green-700 text-white px-6 py-2
+                           rounded-lg text-sm hover:bg-green-600">
+                Add Products (Admin)
+              </button>
             </div>
           ) : (
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -194,114 +229,115 @@ const Home = () => {
           </h2>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {[
-              {
-                icon: '📚',
-                title: 'Huge Collection',
-                desc: 'State Board, CBSE, TNPSC & more'
-              },
-              {
-                icon: '🆓',
-                title: 'Free Delivery',
-                desc: 'Under 1kg — FREE across India'
-              },
-              {
-                icon: '🌍',
-                title: 'Worldwide',
-                desc: 'International shipping available'
-              },
-              {
-                icon: '🏪',
-                title: 'Store Pickup',
-                desc: 'Collect at Dindigul shop'
-              },
-              {
-                icon: '📦',
-                title: 'Wholesale',
-                desc: 'MOU for schools & colleges'
-              },
-              {
-                icon: '🎁',
-                title: 'Custom Gifts',
-                desc: 'Personalised hampers'
-              },
-              {
-                icon: '🤖',
-                title: 'AI Assistant',
-                desc: '24/7 chatbot support'
-              },
-              {
-                icon: '⚡',
-                title: 'Fast Orders',
-                desc: 'Quick processing & dispatch'
-              },
+              { icon: '📚', title: 'Huge Collection',
+                desc: 'State Board, CBSE, TNPSC & more' },
+              { icon: '🆓', title: 'Free Delivery',
+                desc: 'Under 1kg — FREE across India' },
+              { icon: '🌍', title: 'Worldwide',
+                desc: 'International shipping available' },
+              { icon: '🏪', title: 'Store Pickup',
+                desc: 'Collect at Dindigul shop' },
+              { icon: '📦', title: 'Wholesale',
+                desc: 'MOU for schools & colleges' },
+              { icon: '🎁', title: 'Custom Gifts',
+                desc: 'Personalised hampers' },
+              { icon: '🤖', title: 'AI Assistant',
+                desc: '24/7 chatbot support' },
+              { icon: '⚡', title: 'Fast Orders',
+                desc: 'Quick processing & dispatch' },
             ].map((item) => (
               <div key={item.title}
                 className="bg-white rounded-xl p-4 shadow-sm
                            border border-gray-100 text-center
-                           hover:shadow-md transition-shadow">
+                           hover:shadow-md hover:border-green-200
+                           transition-all">
                 <p className="text-3xl mb-2">{item.icon}</p>
                 <p className="font-bold text-gray-800 text-sm">
                   {item.title}
                 </p>
-                <p className="text-xs text-gray-500 mt-1">
-                  {item.desc}
-                </p>
+                <p className="text-xs text-gray-500 mt-1">{item.desc}</p>
               </div>
             ))}
           </div>
         </div>
 
         {/* CTA Banner */}
-        <div className="bg-gradient-to-r from-yellow-400 to-yellow-300
-                        rounded-2xl p-6 text-center mb-10">
-          <h2 className="text-xl font-bold text-gray-800 mb-1">
+        <div className="rounded-2xl p-6 text-center mb-10 text-white"
+          style={{ background: 'linear-gradient(135deg, #1a4a2e, #2d7a4f)' }}>
+          <h2 className="text-xl font-bold mb-1">
             Schools & Colleges — Special Wholesale Pricing!
           </h2>
-          <p className="text-gray-700 text-sm mb-4">
+          <p className="text-green-100 text-sm mb-4">
             MOU agreements available. Contact us for bulk orders.
           </p>
           <button
             onClick={() => navigate('/wholesale')}
-            className="bg-blue-800 text-white px-6 py-2 rounded-full
-                       font-bold hover:bg-blue-700 transition">
+            className="bg-yellow-400 text-gray-900 px-6 py-2 rounded-full
+                       font-bold hover:bg-yellow-300 transition">
             Enquire Now →
           </button>
         </div>
       </div>
 
-      {/* Footer */}
-      <footer className="bg-blue-900 text-white py-10 px-4">
+      {/* Footer — Dark Green */}
+      <footer className="text-white py-10 px-4"
+        style={{ background: '#1a3d2b' }}>
         <div className="max-w-6xl mx-auto grid grid-cols-2
                         md:grid-cols-4 gap-6 text-sm mb-8">
 
+          {/* Logo + Name */}
           <div>
             <div className="flex items-center gap-2 mb-3">
               <div className="w-10 h-10 rounded-full border-2
-                              border-yellow-400 overflow-hidden">
+                              border-yellow-400 overflow-hidden
+                              bg-yellow-50">
                 <img
-                  src="https://upload.wikimedia.org/wikipedia/commons/thumb/5/5e/Thiruvalluvar_statue.jpg/200px-Thiruvalluvar_statue.jpg"
+                  src="/logo.jpg"
                   alt="Logo"
-                  className="w-full h-full object-cover"
+                  className="w-full h-full object-cover object-top"
+                  onError={(e: any) => {
+                    e.target.style.display = 'none';
+                    e.target.parentElement.innerHTML = '📚';
+                  }}
                 />
               </div>
-              <p className="font-bold">Ayyanar Book Centre</p>
+              <p className="font-bold">
+                {settings.shop_name || 'Ayyanar Book Centre'}
+              </p>
             </div>
-            <p className="text-blue-300 text-xs">
-              Dindigul, Tamil Nadu
+            <p className="text-green-300 text-xs">
+              {settings.shop_address || 'Dindigul, Tamil Nadu'}
             </p>
-            <p className="text-blue-300 text-xs">India - 624 001</p>
+            {settings.branch_2_name && (
+              <div className="mt-2">
+                <p className="text-green-400 text-xs font-medium">
+                  Branch 2:
+                </p>
+                <p className="text-green-300 text-xs">
+                  {settings.branch_2_name}
+                </p>
+                <p className="text-green-300 text-xs">
+                  {settings.branch_2_address}
+                </p>
+              </div>
+            )}
           </div>
 
+          {/* Contact — Dynamic from Settings */}
           <div>
             <p className="font-bold mb-3">Contact Us</p>
-            <div className="space-y-1 text-blue-300 text-xs">
-              <p>📞 +91 9894235330</p>
-              <p>✉️ ayyanarbookcentredgl1@gmail.com</p>
-              <p>📸 @ayyanarbookcentre</p>
-              <p>🕐 Mon-Sat: 9AM - 8PM</p>
+            <div className="space-y-1 text-green-300 text-xs">
+              <p>📞 {settings.phone || '+91 9894235330'}</p>
+              {settings.branch_2_phone && (
+                <p>📞 Branch 2: {settings.branch_2_phone}</p>
+              )}
+              <p>✉️ {settings.email || 'ayyanarbookcentredgl1@gmail.com'}</p>
+              <p>📸 {settings.instagram || '@ayyanarbookcentre'}</p>
+              <p>🕐 {settings.working_hours || 'Mon-Sat: 9AM-8PM'}</p>
             </div>
           </div>
 
+          {/* Quick Links */}
           <div>
             <p className="font-bold mb-3">Quick Links</p>
             <div className="space-y-1">
@@ -309,38 +345,46 @@ const Home = () => {
                 { href: '/products', label: '📚 Products' },
                 { href: '/wholesale', label: '🏭 Wholesale' },
                 { href: '/orders', label: '📦 Track Order' },
+                { href: '/my-orders', label: '📋 My Orders' },
                 { href: '/terms', label: '📋 Terms & Conditions' },
               ].map((link) => (
-                <a key={link.href} href={link.href}
-                  className="block text-blue-300 hover:text-white
-                             text-xs transition-colors">
+                <button
+                  key={link.href}
+                  onClick={() => navigate(link.href)}
+                  className="block text-green-300 hover:text-yellow-400
+                             text-xs transition-colors text-left">
                   {link.label}
-                </a>
+                </button>
               ))}
             </div>
           </div>
 
+          {/* Delivery Info */}
           <div>
             <p className="font-bold mb-3">Delivery Info</p>
-            <div className="space-y-1 text-blue-300 text-xs">
+            <div className="space-y-1 text-green-300 text-xs">
               <p>🆓 Under 1kg — FREE</p>
               <p>🏠 Tamil Nadu — Rs.80</p>
               <p>📦 Other States — Rs.150</p>
               <p>✈️ International — Rs.800+</p>
-              <a href="/terms"
-                className="text-yellow-400 hover:underline block mt-2">
+              <button
+                onClick={() => navigate('/terms')}
+                className="text-yellow-400 hover:underline block mt-2
+                           text-left">
                 Full delivery policy →
-              </a>
+              </button>
             </div>
           </div>
         </div>
 
-        <div className="border-t border-blue-800 pt-4 text-center">
-          <p className="text-blue-400 text-xs">
-            © 2025 Ayyanar Book Centre, Dindigul. All rights reserved.
+        <div className="border-t pt-4 text-center"
+          style={{ borderColor: '#2d5a3d' }}>
+          <p className="text-green-400 text-xs">
+            © 2025 {settings.shop_name || 'Ayyanar Book Centre'}.
+            All rights reserved.
           </p>
-          <p className="text-blue-500 text-xs mt-1 italic">
-            "கற்றதனால் ஆய பயனென்கொல்" — திருவள்ளுவர்
+          <p className="text-green-500 text-xs mt-1 italic">
+            "{settings.tagline || 'Knowledge is the floor of success'}"
           </p>
         </div>
       </footer>

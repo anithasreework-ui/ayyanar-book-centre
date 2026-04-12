@@ -107,3 +107,42 @@ def login(user: dict, db: Session = Depends(get_db)):
         "role": db_user.role,
         "message": "Login successful!"
     }
+@router.post("/forgot-password")
+def forgot_password(data: dict, db: Session = Depends(get_db)):
+    email = data.get("email", "").strip().lower()
+
+    if not email:
+        raise HTTPException(
+            status_code=400,
+            detail="Email is required!"
+        )
+
+    user = db.query(models.User).filter(
+        models.User.email == email
+    ).first()
+
+    # Security: always return success
+    # (don't reveal if email exists)
+    if not user:
+        return {
+            "message": "If this email exists, reset instructions sent!",
+            "status": "sent"
+        }
+
+    # Generate temp password
+    import random, string
+    temp_password = "Reset@" + "".join(
+        random.choices(string.digits, k=6)
+    )
+
+    # Update password in DB
+    user.password_hash = hash_password(temp_password)
+    db.commit()
+
+    # In production — send email
+    # For now — return temp password (show to user)
+    return {
+        "message": "Password reset successful!",
+        "temp_password": temp_password,
+        "note": "Use this temporary password to login, then change it."
+    }

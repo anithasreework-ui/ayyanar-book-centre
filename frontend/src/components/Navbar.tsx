@@ -32,11 +32,11 @@ const Navbar = () => {
   ];
 
   return (
-    <nav className="bg-blue-900 text-white shadow-lg sticky top-0 z-50">
+    <nav className="bg-green-900 text-white shadow-lg sticky top-0 z-50">
 
       {/* Top Info Bar — Desktop */}
-      <div className="bg-blue-950 text-xs text-center py-1
-                      text-blue-200 hidden md:block">
+      <div className="bg-green-950 text-xs text-center py-1
+                      text-green-300 hidden md:block">
         📞 +91 9894235330 &nbsp;|&nbsp;
         ✉️ ayyanarbookcentredgl1@gmail.com &nbsp;|&nbsp;
         🕐 Mon–Sat: 9AM–8PM &nbsp;|&nbsp;
@@ -67,7 +67,7 @@ const Navbar = () => {
               <p className="font-bold text-sm leading-tight">
                 Ayyanar Book Centre
               </p>
-              <p className="text-xs text-blue-300 leading-tight">
+              <p className="text-xs text-green-300 leading-tight">
                 Dindigul, Tamil Nadu
               </p>
             </div>
@@ -105,7 +105,7 @@ const Navbar = () => {
             {NAV_LINKS.map((item) => (
               <Link key={item.to} to={item.to}
                 className="flex flex-col items-center px-3 py-2
-                           hover:bg-blue-800 rounded-lg transition-all
+                           hover:bg-green-800 rounded-lg transition-all
                            text-center min-w-14">
                 <span className="text-lg leading-none">{item.icon}</span>
                 <span className="text-xs mt-0.5">{item.label}</span>
@@ -116,7 +116,7 @@ const Navbar = () => {
             {token && (
               <Link to="/my-orders"
                 className="flex flex-col items-center px-3 py-2
-                           hover:bg-blue-800 rounded-lg transition-all
+                           hover:bg-green-800 rounded-lg transition-all
                            text-center min-w-14">
                 <span className="text-lg leading-none">📋</span>
                 <span className="text-xs mt-0.5">My Orders</span>
@@ -138,7 +138,7 @@ const Navbar = () => {
             {/* Login / User */}
             {token ? (
               <div className="flex flex-col items-center ml-1 px-2">
-                <span className="text-xs text-blue-300 truncate max-w-20">
+                <span className="text-xs text-green-300 truncate max-w-20">
                   {user.name?.split(' ')[0]}
                 </span>
                 <button onClick={handleLogout}
@@ -194,11 +194,11 @@ const Navbar = () => {
           <div className="md:hidden pb-4 border-t border-blue-800 pt-3">
 
             {/* Contact Info */}
-            <div className="bg-blue-950 rounded-lg p-3 mb-3">
+            <div className="bg-green-950 rounded-lg p-3 mb-3">
               <p className="text-xs text-blue-200">
                 📞 +91 9894235330
               </p>
-              <p className="text-xs text-blue-200 mt-0.5">
+              <p className="text-xs text-green-200 mt-0.5">
                 🕐 Mon–Sat: 9AM–8PM
               </p>
             </div>
@@ -209,7 +209,7 @@ const Navbar = () => {
                 <Link key={item.to} to={item.to}
                   onClick={() => setMenuOpen(false)}
                   className="flex items-center gap-3 px-4 py-3
-                             hover:bg-blue-800 rounded-lg transition-all">
+                             hover:bg-green-800 rounded-lg transition-all">
                   <span className="text-xl">{item.icon}</span>
                   <span className="font-medium">{item.label}</span>
                 </Link>
@@ -220,7 +220,7 @@ const Navbar = () => {
                 <Link to="/my-orders"
                   onClick={() => setMenuOpen(false)}
                   className="flex items-center gap-3 px-4 py-3
-                             hover:bg-blue-800 rounded-lg transition-all">
+                             hover:bg-green-800 rounded-lg transition-all">
                   <span className="text-xl">📋</span>
                   <span className="font-medium">My Orders</span>
                 </Link>
@@ -240,7 +240,7 @@ const Navbar = () => {
               {/* Login / Logout */}
               {token ? (
                 <div>
-                  <div className="px-4 py-2 text-blue-300 text-sm">
+                  <div className="px-4 py-2 text-green-300 text-sm">
                     👤 {user.name}
                   </div>
                   <button onClick={handleLogout}
