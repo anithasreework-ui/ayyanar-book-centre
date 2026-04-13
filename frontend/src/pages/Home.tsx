@@ -94,8 +94,11 @@ const Home = () => {
                             italic mb-1">
                 "{settings.tagline || 'Knowledge is the floor of success'}"
               </p>
-              <p className="text-green-200 text-sm">
+              <p className="text-green-200 text-sm mb-1">
                 Dindigul's Most Trusted Bookshop
+              </p>
+              <p className="text-green-300 text-xs">
+                📍 14, Dudley School Building, AMC Road, Dindigul, Tamil Nadu 624001
               </p>
             </div>
           </div>
@@ -134,7 +137,7 @@ const Home = () => {
             { icon: '🆓', text: 'Free Delivery under 1kg' },
             { icon: '🌍', text: 'Worldwide Shipping' },
             { icon: '🏪', text: 'Store Pickup Available' },
-            { icon: '📦', text: 'Wholesale for Schools' },
+            { icon: '📦', text: 'Wholesaler & Retailer for Schools & Colleges' },
           ].map((item) => (
             <div key={item.text}
               className="flex items-center gap-1">

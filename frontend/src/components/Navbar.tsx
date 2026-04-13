@@ -1,12 +1,26 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import axios from 'axios';
+
+const API = 'https://ayyanar-book-centre-1.onrender.com';
 
 const Navbar = () => {
   const [search, setSearch] = useState('');
   const [menuOpen, setMenuOpen] = useState(false);
+  const [settings, setSettings] = useState<any>({
+    phone: '+91 9894235330',
+    email: 'ayyanarbookcentredgl1@gmail.com',
+    working_hours: 'Mon-Sat: 9AM-9PM',
+  });
   const navigate = useNavigate();
   const token = localStorage.getItem('token');
   const user = JSON.parse(localStorage.getItem('user') || '{}');
+
+  useEffect(() => {
+    axios.get(`${API}/settings/public`)
+      .then((res) => { if (res.data) setSettings(res.data); })
+      .catch(() => {});
+  }, []);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -32,14 +46,17 @@ const Navbar = () => {
   ];
 
   return (
-    <nav className="bg-green-900 text-white shadow-lg sticky top-0 z-50">
+    <nav className="text-white shadow-lg sticky top-0 z-50"
+      style={{ background: '#1a3d2b' }}>
 
-      {/* Top Info Bar — Desktop */}
-      <div className="bg-green-950 text-xs text-center py-1
-                      text-green-300 hidden md:block">
-        📞 +91 9894235330 &nbsp;|&nbsp;
-        ✉️ ayyanarbookcentredgl1@gmail.com &nbsp;|&nbsp;
-        🕐 Mon–Sat: 9AM–8PM &nbsp;|&nbsp;
+      {/* Top Info Bar — Dynamic */}
+      <div className="text-xs text-center py-1 text-green-200
+                      hidden md:block"
+        style={{ background: '#0f2d1d' }}>
+        📞 {settings.phone || '+91 9894235330'} &nbsp;|&nbsp;
+        ✉️ {settings.email || 'ayyanarbookcentredgl1@gmail.com'}
+        &nbsp;|&nbsp;
+        🕐 {settings.working_hours || 'Mon-Sat: 9AM-9PM'} &nbsp;|&nbsp;
         📍 Dindigul, Tamil Nadu
       </div>
 
@@ -54,12 +71,12 @@ const Navbar = () => {
                             flex-shrink-0 bg-yellow-50">
               <img
                 src="/logo.jpg"
-                alt="Thiruvalluvar - Ayyanar Book Centre"
-                className="w-full h-full object-cover"
+                alt="Thiruvalluvar"
+                className="w-full h-full object-cover object-top"
                 onError={(e: any) => {
                   e.target.style.display = 'none';
                   e.target.parentElement.innerHTML =
-                    '<span style="font-size:20px;display:flex;align-items:center;justify-content:center;height:100%">📚</span>';
+                    '<div style="display:flex;align-items:center;justify-content:center;height:100%;font-size:20px">📚</div>';
                 }}
               />
             </div>
@@ -72,13 +89,11 @@ const Navbar = () => {
               </p>
             </div>
             <div className="block md:hidden">
-              <p className="font-bold text-sm leading-tight">
-                Ayyanar Books
-              </p>
+              <p className="font-bold text-sm">Ayyanar Books</p>
             </div>
           </Link>
 
-          {/* Search Bar — Desktop */}
+          {/* Search */}
           <form onSubmit={handleSearch}
             className="hidden md:flex flex-1 max-w-md">
             <div className="flex w-full">
@@ -100,42 +115,38 @@ const Navbar = () => {
             </div>
           </form>
 
-          {/* Desktop Nav Links */}
+          {/* Desktop Nav */}
           <div className="hidden md:flex items-center gap-1">
             {NAV_LINKS.map((item) => (
               <Link key={item.to} to={item.to}
                 className="flex flex-col items-center px-3 py-2
-                           hover:bg-green-800 rounded-lg transition-all
-                           text-center min-w-14">
+                           rounded-lg transition-all text-center min-w-14
+                           hover:bg-green-800">
                 <span className="text-lg leading-none">{item.icon}</span>
                 <span className="text-xs mt-0.5">{item.label}</span>
               </Link>
             ))}
 
-            {/* My Orders — Login users only */}
             {token && (
               <Link to="/my-orders"
                 className="flex flex-col items-center px-3 py-2
-                           hover:bg-green-800 rounded-lg transition-all
-                           text-center min-w-14">
+                           rounded-lg transition-all text-center min-w-14
+                           hover:bg-green-800">
                 <span className="text-lg leading-none">📋</span>
                 <span className="text-xs mt-0.5">My Orders</span>
               </Link>
             )}
 
-            {/* Admin Link */}
             {token && user.role === 'admin' && (
               <Link to="/admin"
                 className="flex flex-col items-center px-3 py-2
                            bg-yellow-500 hover:bg-yellow-400 rounded-lg
-                           transition-all text-center text-gray-900
-                           min-w-14">
+                           transition-all text-center text-gray-900 min-w-14">
                 <span className="text-lg leading-none">⚙️</span>
                 <span className="text-xs mt-0.5 font-bold">Admin</span>
               </Link>
             )}
 
-            {/* Login / User */}
             {token ? (
               <div className="flex flex-col items-center ml-1 px-2">
                 <span className="text-xs text-green-300 truncate max-w-20">
@@ -151,19 +162,17 @@ const Navbar = () => {
               <Link to="/login"
                 className="flex flex-col items-center px-3 py-2
                            bg-yellow-400 text-gray-900 rounded-lg
-                           hover:bg-yellow-300 transition-all min-w-14
-                           ml-1">
+                           hover:bg-yellow-300 transition-all min-w-14 ml-1">
                 <span className="text-lg leading-none">👤</span>
                 <span className="text-xs mt-0.5 font-bold">Login</span>
               </Link>
             )}
           </div>
 
-          {/* Mobile Right */}
+          {/* Mobile */}
           <div className="flex md:hidden items-center gap-2">
             <Link to="/cart" className="text-2xl">🛒</Link>
-            <button
-              onClick={() => setMenuOpen(!menuOpen)}
+            <button onClick={() => setMenuOpen(!menuOpen)}
               className="text-2xl p-1">
               {menuOpen ? '✕' : '☰'}
             </button>
@@ -191,20 +200,18 @@ const Navbar = () => {
 
         {/* Mobile Menu */}
         {menuOpen && (
-          <div className="md:hidden pb-4 border-t border-blue-800 pt-3">
+          <div className="md:hidden pb-4 border-t pt-3"
+            style={{ borderColor: '#2d5a3d' }}>
 
-            {/* Contact Info */}
-            <div className="bg-green-950 rounded-lg p-3 mb-3">
-              <p className="text-xs text-blue-200">
-                📞 +91 9894235330
-              </p>
-              <p className="text-xs text-green-200 mt-0.5">
-                🕐 Mon–Sat: 9AM–8PM
+            <div className="rounded-lg p-3 mb-3 text-xs text-green-200"
+              style={{ background: '#0f2d1d' }}>
+              <p>📞 {settings.phone || '+91 9894235330'}</p>
+              <p className="mt-0.5">
+                🕐 {settings.working_hours || 'Mon-Sat: 9AM-9PM'}
               </p>
             </div>
 
             <div className="space-y-1">
-              {/* All Nav Links */}
               {NAV_LINKS.map((item) => (
                 <Link key={item.to} to={item.to}
                   onClick={() => setMenuOpen(false)}
@@ -215,7 +222,6 @@ const Navbar = () => {
                 </Link>
               ))}
 
-              {/* My Orders */}
               {token && (
                 <Link to="/my-orders"
                   onClick={() => setMenuOpen(false)}
@@ -226,7 +232,6 @@ const Navbar = () => {
                 </Link>
               )}
 
-              {/* Admin */}
               {token && user.role === 'admin' && (
                 <Link to="/admin"
                   onClick={() => setMenuOpen(false)}
@@ -237,7 +242,6 @@ const Navbar = () => {
                 </Link>
               )}
 
-              {/* Login / Logout */}
               {token ? (
                 <div>
                   <div className="px-4 py-2 text-green-300 text-sm">
