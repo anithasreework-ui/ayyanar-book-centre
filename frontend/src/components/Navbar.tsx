@@ -89,7 +89,7 @@ const Navbar = () => {
               </p>
             </div>
             <div className="block md:hidden">
-              <p className="font-bold text-sm">Ayyanar Books</p>
+              <p className="font-bold text-sm">Ayyanar Books Centre </p>
             </div>
           </Link>
 
