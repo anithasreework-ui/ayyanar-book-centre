@@ -9,6 +9,7 @@ const Checkout = () => {
   const [deliveryType, setDeliveryType] = useState('home_delivery');
   const [country, setCountry] = useState('India');
   const [step, setStep] = useState(1);
+  const [selectedPayment, setSelectedPayment] = useState('cod');
   const [form, setForm] = useState({
     address: '',
     pincode: '',
@@ -21,6 +22,8 @@ const Checkout = () => {
   const [orderResult, setOrderResult] = useState<any>(null);
   const navigate = useNavigate();
 
+  const user = JSON.parse(localStorage.getItem('user') || '{}');
+
   useEffect(() => {
     const stored = localStorage.getItem('cart');
     if (!stored || JSON.parse(stored).length === 0) {
@@ -28,7 +31,20 @@ const Checkout = () => {
       return;
     }
     setCartItems(JSON.parse(stored));
+
+    // Store pickup → always UPI
+    if (deliveryType === 'store_pickup') {
+      setSelectedPayment('upi');
+    }
   }, []);
+
+  useEffect(() => {
+    if (deliveryType === 'store_pickup') {
+      setSelectedPayment('upi');
+    } else {
+      setSelectedPayment('cod');
+    }
+  }, [deliveryType]);
 
   const subtotal = cartItems.reduce(
     (sum, item) => sum + item.price * item.quantity,
@@ -38,7 +54,7 @@ const Checkout = () => {
   const getDeliveryCharge = () => {
     if (deliveryType === 'store_pickup') return 0;
     if (country !== 'India') return 800;
-    return 0; // Under 1kg free — backend calculates exact
+    return 0;
   };
 
   const grandTotal = subtotal + getDeliveryCharge();
@@ -74,8 +90,10 @@ const Checkout = () => {
     }
 
     setLoading(true);
+
     try {
-      const res = await axios.post(
+      // Step 1: Create order in DB
+      const orderRes = await axios.post(
         `${API}/orders/`,
         {
           items: cartItems.map((i) => ({
@@ -94,14 +112,117 @@ const Checkout = () => {
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
-      localStorage.removeItem('cart');
-      setOrderResult(res.data);
-      setStep(3);
+      const orderData = orderRes.data;
+
+      // COD — No payment now
+      if (selectedPayment === 'cod') {
+        // Save COD payment record
+        await axios.post(
+          `${API}/payment/cod-pending`,
+          { order_id: orderData.order_id },
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        localStorage.removeItem('cart');
+        setOrderResult({
+          ...orderData,
+          payment_method: 'cod',
+          payment_status: 'pending',
+        });
+        setStep(3);
+        setLoading(false);
+        return;
+      }
+
+      // UPI / Online Payment — Razorpay
+      const rzpRes = await axios.post(
+        `${API}/payment/create-order`,
+        {
+          amount: orderData.total,
+          order_id: orderData.order_id,
+        },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      const rzpData = rzpRes.data;
+
+      const options = {
+        key: rzpData.key_id,
+        amount: Math.round(orderData.total * 100),
+        currency: 'INR',
+        name: 'Ayyanar Book Centre',
+        description: `Order #${orderData.order_id} — Dindigul`,
+        image: '/logo.jpg',
+        order_id: rzpData.razorpay_order_id,
+        handler: async (response: any) => {
+          try {
+            const verifyRes = await axios.post(
+              `${API}/payment/verify`,
+              {
+                razorpay_order_id: response.razorpay_order_id,
+                razorpay_payment_id: response.razorpay_payment_id,
+                razorpay_signature: response.razorpay_signature,
+                shop_order_id: orderData.order_id,
+                amount: orderData.total,
+                payment_method: 'upi',
+              },
+              { headers: { Authorization: `Bearer ${token}` } }
+            );
+
+            if (verifyRes.data.status === 'success') {
+              localStorage.removeItem('cart');
+              setOrderResult({
+                ...orderData,
+                payment_method: 'upi',
+                payment_status: 'success',
+                payment_id: response.razorpay_payment_id,
+              });
+              setStep(3);
+            }
+          } catch {
+            alert(
+              '⚠️ Payment done but verification failed!\n' +
+              'Please contact us: +91 9894235330\n' +
+              `Order ID: ${orderData.order_id}`
+            );
+          }
+          setLoading(false);
+        },
+        prefill: {
+          name: user?.name || '',
+          contact: form.phone,
+          email: form.email || '',
+        },
+        theme: {
+          color: '#1a4a2e',
+        },
+        modal: {
+          ondismiss: () => {
+            alert(
+              'Payment cancelled! Your order was not placed.\n' +
+              'Please try again.'
+            );
+            setLoading(false);
+          },
+        },
+      };
+
+      const rzp = new (window as any).Razorpay(options);
+
+      rzp.on('payment.failed', (response: any) => {
+        alert(
+          `❌ Payment Failed!\n` +
+          `Reason: ${response.error.description}\n` +
+          `Please try again or contact +91 9894235330`
+        );
+        setLoading(false);
+      });
+
+      rzp.open();
+
     } catch (err: any) {
-      const msg =
-        err.response?.data?.detail || 'Order failed! Please try again.';
+      const msg = err.response?.data?.detail ||
+        'Order failed! Please try again.';
       alert(msg);
-    } finally {
       setLoading(false);
     }
   };
@@ -111,18 +232,50 @@ const Checkout = () => {
     return (
       <div className="max-w-lg mx-auto px-4 py-12 text-center">
         <div className="bg-white rounded-3xl shadow-lg p-8">
-          <p className="text-6xl mb-4">🎉</p>
-          <h1 className="text-2xl font-bold text-gray-800 mb-1">
-            Order Placed Successfully!
-          </h1>
-          <p className="text-gray-500 text-sm mb-6">
+
+          {/* Payment Status */}
+          {orderResult.payment_method === 'upi' &&
+           orderResult.payment_status === 'success' ? (
+            <>
+              <p className="text-6xl mb-3">🎉</p>
+              <h1 className="text-2xl font-bold text-gray-800 mb-1">
+                Payment Successful!
+              </h1>
+              <p className="text-green-600 font-medium mb-1">
+                ✅ Order Confirmed
+              </p>
+            </>
+          ) : orderResult.payment_method === 'cod' ? (
+            <>
+              <p className="text-6xl mb-3">📦</p>
+              <h1 className="text-2xl font-bold text-gray-800 mb-1">
+                Order Placed!
+              </h1>
+              <div className="bg-orange-50 border border-orange-200
+                              rounded-xl px-4 py-2 mb-2 inline-block">
+                <p className="text-orange-700 font-medium text-sm">
+                  💵 Cash on Delivery — Pay when you receive
+                </p>
+              </div>
+            </>
+          ) : (
+            <>
+              <p className="text-6xl mb-3">🎉</p>
+              <h1 className="text-2xl font-bold text-gray-800 mb-1">
+                Order Placed!
+              </h1>
+            </>
+          )}
+
+          <p className="text-gray-500 text-sm mb-5">
             Order #{orderResult.order_id}
           </p>
 
           {/* Store Pickup OTP */}
           {orderResult.otp_code && (
-            <div className="bg-purple-50 border-2 border-purple-300
-                            rounded-2xl p-5 mb-4">
+            <div className="border-2 border-purple-300 rounded-2xl
+                            p-5 mb-4"
+              style={{ background: '#f5f0ff' }}>
               <p className="text-xs text-purple-600 font-medium mb-1">
                 🏪 STORE PICKUP OTP
               </p>
@@ -131,40 +284,65 @@ const Checkout = () => {
                 {orderResult.otp_code}
               </p>
               <p className="text-xs text-gray-500">
-                Show this OTP at Ayyanar Book Centre counter, Dindigul
+                Show this OTP at Ayyanar Book Centre, Dindigul
               </p>
               <p className="text-xs text-gray-400 mt-1">
-                📞 +91 9894235330 | Mon–Sat: 9AM–8PM
+                📞 +91 9894235330 | Mon–Sat: 9AM–9PM
               </p>
               <div className="mt-3 bg-yellow-50 border border-yellow-200
                               rounded-lg p-2">
                 <p className="text-xs text-yellow-700 font-medium">
-                  ⚠️ Save this OTP! You can also find it in My Orders.
+                  ⚠️ Save this OTP! Also available in My Orders.
                 </p>
               </div>
             </div>
           )}
 
-          {/* Online Tracking ID */}
+          {/* Tracking ID */}
           {orderResult.tracking_id && (
-            <div className="bg-green-50 border-2 border-green-300
-                            rounded-2xl p-5 mb-4">
+            <div className="border-2 border-green-300 rounded-2xl
+                            p-4 mb-4"
+              style={{ background: '#f0fff4' }}>
               <p className="text-xs text-green-600 font-medium mb-1">
                 🚚 TRACKING ID
               </p>
-              <p className="text-4xl font-bold text-green-700
+              <p className="text-3xl font-bold text-green-700
                             tracking-widest mb-1">
                 {orderResult.tracking_id}
               </p>
               <p className="text-xs text-gray-500">
-                Use this ID to track your order delivery
+                Use this to track your delivery
               </p>
-              <div className="mt-3 bg-yellow-50 border border-yellow-200
+              <div className="mt-2 bg-yellow-50 border border-yellow-200
                               rounded-lg p-2">
                 <p className="text-xs text-yellow-700 font-medium">
-                  ⚠️ Save this ID! You can also find it in My Orders.
+                  ⚠️ Save this ID! Also available in My Orders.
                 </p>
               </div>
+            </div>
+          )}
+
+          {/* COD Info */}
+          {orderResult.payment_method === 'cod' && (
+            <div className="bg-orange-50 border border-orange-200
+                            rounded-xl p-4 mb-4 text-left">
+              <p className="font-medium text-orange-800 mb-2 text-sm">
+                💵 Cash on Delivery Instructions:
+              </p>
+              <ul className="space-y-1 text-xs text-orange-700">
+                <li>• Keep exact change ready at delivery</li>
+                <li>• Delivery person will enter OTP after payment</li>
+                <li>• Order status updates to "Delivered" after COD OTP</li>
+                <li>• Record unboxing video when you receive</li>
+              </ul>
+            </div>
+          )}
+
+          {/* Payment ID */}
+          {orderResult.payment_id && (
+            <div className="bg-gray-50 rounded-xl p-3 mb-4 text-xs
+                            text-gray-500">
+              Payment ID: {orderResult.payment_id}
             </div>
           )}
 
@@ -182,9 +360,13 @@ const Checkout = () => {
                 <span className="text-gray-500">Delivery</span>
                 <span className={
                   orderResult.delivery_charge === 0
-                    ? 'text-green-600 font-medium'
+                    ? 'font-medium'
                     : ''
-                }>
+                }
+                  style={{
+                    color: orderResult.delivery_charge === 0
+                      ? '#1a4a2e' : 'inherit'
+                  }}>
                   {orderResult.delivery_charge === 0
                     ? 'FREE 🎉'
                     : `Rs.${orderResult.delivery_charge}`}
@@ -192,18 +374,18 @@ const Checkout = () => {
               </div>
               <div className="flex justify-between font-bold border-t
                               border-gray-200 pt-2 mt-1">
-                <span>Total Paid</span>
-                <span className="text-green-600">
+                <span>Total</span>
+                <span style={{ color: '#1a4a2e' }}>
                   Rs.{orderResult.total?.toFixed(2)}
                 </span>
               </div>
             </div>
           </div>
 
-          <div className="bg-blue-50 rounded-xl p-3 mb-6 text-sm">
+          <div className="bg-blue-50 rounded-xl p-3 mb-5 text-sm">
             <p className="text-gray-600">
-              📞 Need help? Call{' '}
-              <span className="font-bold text-blue-800">
+              📞 Need help?{' '}
+              <span className="font-bold" style={{ color: '#1a4a2e' }}>
                 +91 9894235330
               </span>
             </p>
@@ -212,15 +394,19 @@ const Checkout = () => {
           <div className="flex gap-3">
             <button
               onClick={() => navigate('/my-orders')}
-              className="flex-1 border-2 border-blue-800 text-blue-800
-                         py-3 rounded-xl font-bold hover:bg-blue-50
-                         transition-colors">
+              className="flex-1 border-2 py-3 rounded-xl font-bold
+                         transition-colors"
+              style={{
+                borderColor: '#1a4a2e',
+                color: '#1a4a2e'
+              }}>
               📋 My Orders
             </button>
             <button
               onClick={() => navigate('/')}
-              className="flex-1 bg-blue-800 text-white py-3 rounded-xl
-                         font-bold hover:bg-blue-700 transition-colors">
+              className="flex-1 text-white py-3 rounded-xl font-bold
+                         transition-colors"
+              style={{ background: '#1a4a2e' }}>
               🛍️ Shop More
             </button>
           </div>
@@ -233,41 +419,52 @@ const Checkout = () => {
   if (step === 2) {
     return (
       <div className="max-w-lg mx-auto px-4 py-8">
-        {/* Progress Bar */}
-        <div className="flex items-center gap-2 mb-6">
-          <div className="flex items-center gap-1">
-            <div className="w-6 h-6 rounded-full bg-blue-800 text-white
-                            text-xs flex items-center justify-center
-                            font-bold">
-              1
+
+        {/* Progress */}
+        <div className="flex items-center gap-2 mb-6 max-w-xs">
+          {[
+            { n: 1, label: 'Details' },
+            { n: 2, label: 'Payment' },
+            { n: 3, label: 'Done' },
+          ].map((s, i) => (
+            <div key={s.n} className="flex items-center gap-2 flex-1">
+              <div className="flex items-center gap-1">
+                <div className={`w-6 h-6 rounded-full text-xs flex
+                                items-center justify-center font-bold ${
+                  s.n <= step
+                    ? 'text-white'
+                    : 'bg-gray-200 text-gray-500'
+                }`}
+                  style={s.n <= step
+                    ? { background: '#1a4a2e' }
+                    : {}}>
+                  {s.n}
+                </div>
+                <span className={`text-xs ${
+                  s.n === step
+                    ? 'font-medium'
+                    : 'text-gray-400'
+                }`}
+                  style={s.n === step ? { color: '#1a4a2e' } : {}}>
+                  {s.label}
+                </span>
+              </div>
+              {i < 2 && (
+                <div className={`flex-1 h-0.5 ${
+                  s.n < step ? '' : 'bg-gray-200'
+                }`}
+                  style={s.n < step
+                    ? { background: '#1a4a2e' }
+                    : {}} />
+              )}
             </div>
-            <span className="text-xs text-gray-500">Details</span>
-          </div>
-          <div className="flex-1 h-0.5 bg-blue-800" />
-          <div className="flex items-center gap-1">
-            <div className="w-6 h-6 rounded-full bg-blue-800 text-white
-                            text-xs flex items-center justify-center
-                            font-bold">
-              2
-            </div>
-            <span className="text-xs font-medium text-blue-800">
-              Payment
-            </span>
-          </div>
-          <div className="flex-1 h-0.5 bg-gray-200" />
-          <div className="flex items-center gap-1">
-            <div className="w-6 h-6 rounded-full bg-gray-200 text-gray-500
-                            text-xs flex items-center justify-center
-                            font-bold">
-              3
-            </div>
-            <span className="text-xs text-gray-400">Done</span>
-          </div>
+          ))}
         </div>
 
-        <div className="flex items-center gap-3 mb-6">
+        <div className="flex items-center gap-3 mb-5">
           <button onClick={() => setStep(1)}
-            className="text-blue-700 hover:underline text-sm">
+            className="text-sm hover:underline"
+            style={{ color: '#1a4a2e' }}>
             ← Back
           </button>
           <h1 className="text-2xl font-bold text-gray-800">Payment</h1>
@@ -298,10 +495,10 @@ const Checkout = () => {
             <div className="flex justify-between text-sm">
               <span className="text-gray-500">Delivery</span>
               <span className={
-                getDeliveryCharge() === 0
-                  ? 'text-green-600 font-medium'
-                  : ''
-              }>
+                getDeliveryCharge() === 0 ? 'font-medium' : ''
+              }
+                style={getDeliveryCharge() === 0
+                  ? { color: '#1a4a2e' } : {}}>
                 {getDeliveryCharge() === 0
                   ? 'FREE 🎉'
                   : `Rs.${getDeliveryCharge()}`}
@@ -310,7 +507,7 @@ const Checkout = () => {
             <div className="flex justify-between font-bold text-base
                             border-t border-gray-100 pt-2 mt-1">
               <span>Total</span>
-              <span className="text-green-600">
+              <span style={{ color: '#1a4a2e' }}>
                 Rs.{grandTotal.toFixed(2)}
               </span>
             </div>
@@ -322,9 +519,9 @@ const Checkout = () => {
           <p className="text-gray-600">
             {deliveryType === 'store_pickup'
               ? '🏪 Pickup: Ayyanar Book Centre, Dindigul'
-              : `🚚 Delivering to: ${form.address}, ${form.pincode}`}
+              : `🚚 Deliver to: ${form.address}, ${form.pincode}`}
           </p>
-          <p className="text-gray-500 text-xs mt-1">
+          <p className="text-gray-500 text-xs mt-0.5">
             📞 {form.phone}
           </p>
         </div>
@@ -336,60 +533,103 @@ const Checkout = () => {
             Payment Method
           </h2>
 
-          {/* Store Pickup — Prepaid Notice */}
+          {/* Store Pickup Notice */}
           {deliveryType === 'store_pickup' && (
-            <div className="bg-purple-50 border border-purple-200
-                            rounded-xl p-3 mb-3">
-              <p className="text-purple-800 font-medium text-sm">
+            <div className="rounded-xl p-3 mb-3"
+              style={{ background: '#f0f7f4',
+                       border: '1px solid #a8d5b5' }}>
+              <p className="font-medium text-sm"
+                style={{ color: '#1a4a2e' }}>
                 🏪 Store Pickup — Prepaid Orders Only
               </p>
-              <p className="text-purple-600 text-xs mt-1">
-                Complete payment here. Collect at store with OTP.
+              <p className="text-xs mt-1 text-gray-600">
+                Pay online now. Collect at store with your OTP.
               </p>
             </div>
           )}
 
           <div className="space-y-3">
+
             {/* COD — Home Delivery Only */}
             {deliveryType === 'home_delivery' && (
-              <label className="flex items-center gap-3 p-4 rounded-xl
-                                border-2 border-blue-800 bg-blue-50
-                                cursor-pointer">
-                <input type="radio" name="payment"
-                  defaultChecked className="accent-blue-800" />
-                <div>
+              <label className={`flex items-center gap-3 p-4 rounded-xl
+                                border-2 cursor-pointer transition-all ${
+                selectedPayment === 'cod'
+                  ? 'bg-orange-50'
+                  : 'border-gray-200 hover:border-gray-300'
+              }`}
+                style={selectedPayment === 'cod'
+                  ? { borderColor: '#f97316' }
+                  : {}}>
+                <input
+                  type="radio"
+                  name="payment"
+                  value="cod"
+                  checked={selectedPayment === 'cod'}
+                  onChange={() => setSelectedPayment('cod')}
+                  className="accent-orange-500"
+                />
+                <div className="flex-1">
                   <p className="font-medium text-gray-800">
                     💵 Cash on Delivery
                   </p>
                   <p className="text-xs text-gray-500">
-                    Pay when you receive your order
+                    Pay when you receive • Delivery OTP confirmation
                   </p>
                 </div>
+                {selectedPayment === 'cod' && (
+                  <span className="text-xs bg-orange-100 text-orange-700
+                                   px-2 py-0.5 rounded-full font-medium">
+                    Selected
+                  </span>
+                )}
               </label>
             )}
 
-            {/* Online Payment */}
+            {/* UPI / Online */}
             <label className={`flex items-center gap-3 p-4 rounded-xl
-                              border-2 cursor-pointer ${
-              deliveryType === 'store_pickup'
-                ? 'border-blue-800 bg-blue-50'
-                : 'border-gray-200 opacity-60'
-            }`}>
-              <input type="radio" name="payment"
-                defaultChecked={deliveryType === 'store_pickup'}
-                disabled={deliveryType === 'home_delivery'}
-                className="accent-blue-800"
+                              border-2 cursor-pointer transition-all ${
+              selectedPayment === 'upi'
+                ? 'bg-green-50'
+                : 'border-gray-200 hover:border-gray-300'
+            }`}
+              style={selectedPayment === 'upi'
+                ? { borderColor: '#1a4a2e' }
+                : {}}>
+              <input
+                type="radio"
+                name="payment"
+                value="upi"
+                checked={selectedPayment === 'upi'}
+                onChange={() => setSelectedPayment('upi')}
+                className="accent-green-700"
               />
-              <div>
+              <div className="flex-1">
                 <p className="font-medium text-gray-800">
-                  📱 UPI / Online Payment
+                  📱 UPI / GPay / PhonePe / Cards
                 </p>
                 <p className="text-xs text-gray-500">
                   {deliveryType === 'store_pickup'
-                    ? 'Pay online — collect at store with OTP'
-                    : 'Coming soon — Razorpay integration'}
+                    ? 'Pay online → Get OTP → Collect at store'
+                    : 'Secure online payment via Razorpay'}
                 </p>
+                <div className="flex gap-1 mt-1">
+                  {['GPay', 'PhonePe', 'Paytm', 'UPI', 'Cards'].map((m) => (
+                    <span key={m}
+                      className="text-xs bg-gray-100 text-gray-600
+                                 px-1.5 py-0.5 rounded">
+                      {m}
+                    </span>
+                  ))}
+                </div>
               </div>
+              {selectedPayment === 'upi' && (
+                <span className="text-xs px-2 py-0.5 rounded-full
+                                 font-medium text-white"
+                  style={{ background: '#1a4a2e' }}>
+                  Selected
+                </span>
+              )}
             </label>
           </div>
         </div>
@@ -397,15 +637,24 @@ const Checkout = () => {
         <button
           onClick={handlePlaceOrder}
           disabled={loading}
-          className="w-full bg-green-600 text-white py-4 rounded-xl
-                     font-bold text-lg hover:bg-green-700
-                     disabled:bg-gray-300 transition-all shadow-md">
+          className="w-full text-white py-4 rounded-xl font-bold
+                     text-lg disabled:bg-gray-300 transition-all
+                     shadow-md"
+          style={loading ? {} : {
+            background: selectedPayment === 'cod'
+              ? '#ea580c'
+              : '#1a4a2e'
+          }}>
           {loading
-            ? '⏳ Placing Order...'
-            : deliveryType === 'store_pickup'
-            ? `✅ Confirm & Pay — Rs.${grandTotal.toFixed(2)}`
-            : `✅ Confirm Order — Rs.${grandTotal.toFixed(2)}`}
+            ? '⏳ Processing...'
+            : selectedPayment === 'cod'
+            ? `📦 Place COD Order — Rs.${grandTotal.toFixed(2)}`
+            : `💳 Pay Rs.${grandTotal.toFixed(2)} Online`}
         </button>
+
+        <p className="text-center text-xs text-gray-400 mt-2">
+          🔒 Secured by Razorpay — 256-bit SSL Encryption
+        </p>
       </div>
     );
   }
@@ -414,36 +663,43 @@ const Checkout = () => {
   return (
     <div className="max-w-4xl mx-auto px-4 py-8">
 
-      {/* Progress Bar */}
+      {/* Progress */}
       <div className="flex items-center gap-2 mb-6 max-w-xs">
-        <div className="flex items-center gap-1">
-          <div className="w-6 h-6 rounded-full bg-blue-800 text-white
-                          text-xs flex items-center justify-center
-                          font-bold">
-            1
+        {[
+          { n: 1, label: 'Details' },
+          { n: 2, label: 'Payment' },
+          { n: 3, label: 'Done' },
+        ].map((s, i) => (
+          <div key={s.n} className="flex items-center gap-2 flex-1">
+            <div className="flex items-center gap-1">
+              <div className={`w-6 h-6 rounded-full text-xs flex
+                              items-center justify-center font-bold ${
+                s.n <= step
+                  ? 'text-white'
+                  : 'bg-gray-200 text-gray-500'
+              }`}
+                style={s.n <= step
+                  ? { background: '#1a4a2e' }
+                  : {}}>
+                {s.n}
+              </div>
+              <span className={`text-xs ${
+                s.n === step ? 'font-medium' : 'text-gray-400'
+              }`}
+                style={s.n === step ? { color: '#1a4a2e' } : {}}>
+                {s.label}
+              </span>
+            </div>
+            {i < 2 && (
+              <div className={`flex-1 h-0.5 ${
+                s.n < step ? '' : 'bg-gray-200'
+              }`}
+                style={s.n < step
+                  ? { background: '#1a4a2e' }
+                  : {}} />
+            )}
           </div>
-          <span className="text-xs font-medium text-blue-800">
-            Details
-          </span>
-        </div>
-        <div className="flex-1 h-0.5 bg-gray-200" />
-        <div className="flex items-center gap-1">
-          <div className="w-6 h-6 rounded-full bg-gray-200 text-gray-500
-                          text-xs flex items-center justify-center
-                          font-bold">
-            2
-          </div>
-          <span className="text-xs text-gray-400">Payment</span>
-        </div>
-        <div className="flex-1 h-0.5 bg-gray-200" />
-        <div className="flex items-center gap-1">
-          <div className="w-6 h-6 rounded-full bg-gray-200 text-gray-500
-                          text-xs flex items-center justify-center
-                          font-bold">
-            3
-          </div>
-          <span className="text-xs text-gray-400">Done</span>
-        </div>
+        ))}
       </div>
 
       <h1 className="text-3xl font-bold text-gray-800 mb-6">
@@ -453,7 +709,7 @@ const Checkout = () => {
       <div className="flex flex-col lg:flex-row gap-6">
         <div className="flex-1 space-y-4">
 
-          {/* Delivery Type Selection */}
+          {/* Delivery Type */}
           <div className="bg-white rounded-2xl border border-gray-100
                           shadow-sm p-6">
             <h2 className="font-bold text-gray-800 mb-4">
@@ -481,17 +737,22 @@ const Checkout = () => {
                              border-2 cursor-pointer transition-all
                              relative ${
                     deliveryType === opt.value
-                      ? 'border-blue-800 bg-blue-50'
+                      ? 'bg-green-50'
                       : 'border-gray-200 hover:border-gray-300'
-                  }`}>
+                  }`}
+                  style={deliveryType === opt.value
+                    ? { borderColor: '#1a4a2e' }
+                    : {}}>
                   {opt.badge && (
-                    <span className="absolute top-2 right-2 bg-purple-600
-                                     text-white text-xs px-1.5 py-0.5
-                                     rounded-full">
+                    <span className="absolute top-2 right-2 text-white
+                                     text-xs px-1.5 py-0.5 rounded-full"
+                      style={{ background: '#7c3aed' }}>
                       {opt.badge}
                     </span>
                   )}
-                  <input type="radio" name="delivery"
+                  <input
+                    type="radio"
+                    name="delivery"
                     value={opt.value}
                     checked={deliveryType === opt.value}
                     onChange={(e) => setDeliveryType(e.target.value)}
@@ -511,38 +772,42 @@ const Checkout = () => {
 
           {/* Store Pickup Info */}
           {deliveryType === 'store_pickup' && (
-            <div className="bg-purple-50 rounded-2xl border
-                            border-purple-100 p-5">
+            <div className="rounded-2xl border p-5"
+              style={{
+                background: '#f0f7f4',
+                borderColor: '#a8d5b5'
+              }}>
               <h2 className="font-bold text-gray-800 mb-3">
                 📍 Store Address
               </h2>
               <div className="text-sm text-gray-700 space-y-1 mb-4">
                 <p className="font-medium">🏪 Ayyanar Book Centre</p>
-                <p>📍 Dindigul, Tamil Nadu – 624 001</p>
+                <p>📍 14, Dudley School Building, AMC Road</p>
+                <p>Dindigul, Tamil Nadu – 624 001</p>
                 <p>📞 +91 9894235330</p>
-                <p>🕐 Mon–Sat: 9:00 AM – 8:00 PM</p>
+                <p>🕐 Mon–Sat: 9:00 AM – 9:00 PM</p>
               </div>
               <div className="bg-yellow-50 border border-yellow-200
                               rounded-xl p-3 mb-4">
                 <p className="text-xs text-yellow-700 font-medium">
-                  ⚠️ Store pickup is for PREPAID orders only.
-                  You will receive an OTP after payment to collect
-                  your order.
+                  ⚠️ Store pickup is PREPAID only.
+                  Pay online now. Get OTP. Collect at store.
                 </p>
               </div>
               <div>
                 <label className="text-sm font-medium text-gray-700">
                   Your Phone Number *
                 </label>
-                <input type="tel"
+                <input
+                  type="tel"
                   value={form.phone}
                   onChange={(e) =>
                     setForm({ ...form, phone: e.target.value })
                   }
-                  placeholder="+91 9894235330"
+                  placeholder="+91 XXXXXXXXXX"
                   className="w-full border rounded-lg px-3 py-2 mt-1
-                             text-sm focus:outline-none
-                             focus:border-blue-500"
+                             text-sm focus:outline-none"
+                  style={{ borderColor: '#a8d5b5' }}
                 />
               </div>
             </div>
@@ -561,11 +826,11 @@ const Checkout = () => {
                 <label className="text-sm font-medium text-gray-700">
                   Country *
                 </label>
-                <select value={country}
+                <select
+                  value={country}
                   onChange={(e) => setCountry(e.target.value)}
                   className="w-full border rounded-lg px-3 py-2 mt-1
-                             text-sm focus:outline-none
-                             focus:border-blue-500">
+                             text-sm focus:outline-none focus:border-green-500">
                   <option value="India">🇮🇳 India</option>
                   <option value="USA">🇺🇸 USA</option>
                   <option value="UK">🇬🇧 UK</option>
@@ -574,7 +839,7 @@ const Checkout = () => {
                   <option value="UAE">🇦🇪 UAE</option>
                   <option value="Singapore">🇸🇬 Singapore</option>
                   <option value="Malaysia">🇲🇾 Malaysia</option>
-                  <option value="Other">🌍 Other Country</option>
+                  <option value="Other">🌍 Other</option>
                 </select>
               </div>
 
@@ -584,7 +849,8 @@ const Checkout = () => {
                   <label className="text-sm font-medium text-gray-700">
                     Code *
                   </label>
-                  <input type="text"
+                  <input
+                    type="text"
                     value={form.country_code}
                     onChange={(e) =>
                       setForm({ ...form, country_code: e.target.value })
@@ -596,9 +862,10 @@ const Checkout = () => {
                 </div>
                 <div className="col-span-2">
                   <label className="text-sm font-medium text-gray-700">
-                    Phone Number *
+                    Phone *
                   </label>
-                  <input type="tel"
+                  <input
+                    type="tel"
                     value={form.phone}
                     onChange={(e) =>
                       setForm({ ...form, phone: e.target.value })
@@ -615,12 +882,13 @@ const Checkout = () => {
                 <label className="text-sm font-medium text-gray-700">
                   Alternate Phone (Optional)
                 </label>
-                <input type="tel"
+                <input
+                  type="tel"
                   value={form.alt_phone}
                   onChange={(e) =>
                     setForm({ ...form, alt_phone: e.target.value })
                   }
-                  placeholder="Alternative contact number"
+                  placeholder="Alternative contact"
                   className="w-full border rounded-lg px-3 py-2 mt-1
                              text-sm focus:outline-none"
                 />
@@ -630,9 +898,10 @@ const Checkout = () => {
               {country !== 'India' && (
                 <div>
                   <label className="text-sm font-medium text-gray-700">
-                    Email ID * (Required for international)
+                    Email * (International orders)
                   </label>
-                  <input type="email"
+                  <input
+                    type="email"
                     value={form.email}
                     onChange={(e) =>
                       setForm({ ...form, email: e.target.value })
@@ -666,7 +935,8 @@ const Checkout = () => {
                 <label className="text-sm font-medium text-gray-700">
                   Pincode *
                 </label>
-                <input type="text"
+                <input
+                  type="text"
                   value={form.pincode}
                   onChange={(e) =>
                     setForm({ ...form, pincode: e.target.value })
@@ -697,15 +967,13 @@ const Checkout = () => {
                   className="flex justify-between bg-white rounded-lg
                              px-3 py-2 border border-gray-100">
                   <span className="text-gray-500">{item.label}</span>
-                  <span className="font-medium text-blue-700">
+                  <span className="font-medium"
+                    style={{ color: '#1a4a2e' }}>
                     {item.charge}
                   </span>
                 </div>
               ))}
             </div>
-            <p className="text-xs text-gray-400 mt-2 italic">
-              * Final charge calculated at checkout based on weight
-            </p>
           </div>
         </div>
 
@@ -737,16 +1005,15 @@ const Checkout = () => {
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-gray-500">Delivery</span>
-                <span className="text-green-600 font-medium">
-                  Calculated at next step
+                <span className="text-sm font-medium"
+                  style={{ color: '#1a4a2e' }}>
+                  Calculated at payment
                 </span>
               </div>
               <div className="flex justify-between font-bold text-base
                               border-t border-gray-100 pt-2">
                 <span>Items Total</span>
-                <span className="text-gray-800">
-                  Rs.{subtotal.toFixed(2)}
-                </span>
+                <span>Rs.{subtotal.toFixed(2)}</span>
               </div>
             </div>
 
@@ -754,17 +1021,16 @@ const Checkout = () => {
               onClick={() => {
                 if (validateStep1()) setStep(2);
               }}
-              className="w-full bg-blue-800 text-white py-3 rounded-xl
-                         font-bold hover:bg-blue-700 mt-4
-                         transition-all text-base">
+              className="w-full text-white py-3 rounded-xl font-bold
+                         mt-4 transition-all text-base"
+              style={{ background: '#1a4a2e' }}>
               Proceed to Payment →
             </button>
 
             <button
               onClick={() => navigate('/cart')}
               className="w-full border border-gray-200 text-gray-500
-                         py-2 rounded-xl mt-2 text-sm
-                         hover:bg-gray-50 transition-colors">
+                         py-2 rounded-xl mt-2 text-sm hover:bg-gray-50">
               ← Back to Cart
             </button>
           </div>

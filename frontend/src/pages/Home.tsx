@@ -27,7 +27,7 @@ const Home = () => {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [settings, setSettings] = useState<any>({
-    shop_name: 'Ayyanar Books',
+    shop_name: 'Ayyanar Book Centre',
     phone: '+91 9894235330',
     customer_care: '+91 9894235330',
     email: 'ayyanarbookcentredgl1@gmail.com',
@@ -88,7 +88,7 @@ const Home = () => {
             {/* Title */}
             <div className="text-center md:text-left">
               <h1 className="text-4xl md:text-5xl font-bold mb-1">
-                {settings.shop_name || 'Ayyanar Books'}
+                {settings.shop_name || 'Ayyanar Book Centre'}
               </h1>
               <p className="text-yellow-300 text-sm md:text-base
                             italic mb-1">
@@ -228,7 +228,7 @@ const Home = () => {
         {/* Why Choose Us */}
         <div className="mb-10">
           <h2 className="text-2xl font-bold text-gray-800 mb-4 text-center">
-            Why Choose Ayyanar Books?
+            Why Choose Ayyanar Book Centre?
           </h2>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {[
@@ -305,7 +305,7 @@ const Home = () => {
                 />
               </div>
               <p className="font-bold">
-                {settings.shop_name || 'Ayyanar Books'}
+                {settings.shop_name || 'Ayyanar Book Centre'}
               </p>
             </div>
             <p className="text-green-300 text-xs">
@@ -383,7 +383,7 @@ const Home = () => {
         <div className="border-t pt-4 text-center"
           style={{ borderColor: '#2d5a3d' }}>
           <p className="text-green-400 text-xs">
-            © 2025 {settings.shop_name || 'Ayyanar Books'}.
+            © 2025 {settings.shop_name || 'Ayyanar Book Centre'}.
             All rights reserved.
           </p>
           <p className="text-green-500 text-xs mt-1 italic">
