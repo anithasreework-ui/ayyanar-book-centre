@@ -40,6 +40,7 @@ const Admin = () => {
   const [settingsSaved, setSettingsSaved] = useState(false);
   const [newProduct, setNewProduct] = useState({
     name: '', description: '', price: '',
+    mrp: '',
     category: '', subcategory: '',
     stock_qty: '', image_url: '',
   });
@@ -131,6 +132,7 @@ const Admin = () => {
         {
           ...newProduct,
           price: parseFloat(newProduct.price),
+          mrp: newProduct.mrp ? parseFloat(newProduct.mrp) : null,
           stock_qty: parseInt(newProduct.stock_qty) || 0,
         },
         { headers }
@@ -139,6 +141,7 @@ const Admin = () => {
       fetchAll();
       setNewProduct({
         name: '', description: '', price: '',
+        mrp: '',
         category: '', subcategory: '',
         stock_qty: '', image_url: '',
       });
@@ -873,6 +876,8 @@ const Admin = () => {
                   ph: 'e.g. Group 2, Class 10' },
                 { key: 'image_url', label: 'Image URL', type: 'text',
                   ph: 'https://... or Google Drive link' },
+                  { key: 'mrp', label: 'MRP / Original Price (Rs.)',type: 'number', 
+                    ph: 'e.g. 200 (optional)' },
               ].map((f) => (
                 <div key={f.key}>
                   <label className="text-sm font-medium text-gray-700">

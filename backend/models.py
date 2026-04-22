@@ -28,6 +28,7 @@ class Product(Base):
     weight_kg = Column(Float, default=0.5)
     is_available = Column(Boolean, default=True)
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
+    mrp = Column(Float, nullable=True)
 
 class Order(Base):
     __tablename__ = "orders"

@@ -13,6 +13,7 @@ import Admin from './pages/Admin';
 import Terms from './pages/Terms';
 import Wholesale from './pages/Wholesale';
 import MyOrders from './pages/MyOrders';
+import Wishlist from './pages/Wishlist';
 
 function App() {
   return (
@@ -32,6 +33,7 @@ function App() {
           <Route path="/wholesale" element={<Wholesale />} />
           <Route path="/terms" element={<Terms />} />
           <Route path="/my-orders" element={<MyOrders />} />
+          <Route path="/wishlist" element={<Wishlist />} />
         </Routes>
         <ChatBot />
       </div>

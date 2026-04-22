@@ -219,7 +219,9 @@ const Home = () => {
           ) : (
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               {products.slice(0, 8).map((product: any) => (
-                <ProductCard key={product.id} product={product} />
+                <div key={product.id} style={{ height: '100%' }}>
+                  <ProductCard product={product} />
+                </div>
               ))}
             </div>
           )}

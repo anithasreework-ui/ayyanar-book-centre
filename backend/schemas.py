@@ -32,6 +32,7 @@ class ProductCreate(BaseModel):
     subcategory: Optional[str] = None
     stock_qty: int
     image_url: Optional[str] = None
+    mrp: Optional[float] = None
 
 
 class ProductResponse(BaseModel):

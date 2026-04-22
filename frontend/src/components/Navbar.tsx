@@ -42,6 +42,7 @@ const Navbar = () => {
     { to: '/products', icon: '📚', label: 'Products' },
     { to: '/wholesale', icon: '🏭', label: 'Wholesale' },
     { to: '/orders', icon: '📦', label: 'Track Order' },
+    { to: '/wishlist', icon: '❤️', label: 'Wishlist' },
     { to: '/cart', icon: '🛒', label: 'Cart' },
   ];
 
