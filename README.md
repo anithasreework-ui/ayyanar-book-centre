@@ -73,11 +73,3 @@ Unlike basic chatbot demos, this system is designed for **real-world usage**, in
 - Personalization & analytics
 
 ---
-
-## 🧪 Run Locally
-
-### Backend
-```bash
-cd backend
-pip install -r requirements.txt
-uvicorn main:app --reload
