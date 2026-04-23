@@ -27,12 +27,18 @@ const Register = () => {
     setError('');
     try {
       const res = await registerUser(form);
-      // Auto login after register
+
+      
       localStorage.setItem('token', res.data.token);
+      localStorage.setItem(
+        'refresh_token',
+        res.data.refresh_token || ''
+      );
       localStorage.setItem('user', JSON.stringify({
         name: res.data.name,
         role: res.data.role
       }));
+
       navigate('/');
     } catch (err: any) {
       setError(err.response?.data?.detail || 'Registration failed!');

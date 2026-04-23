@@ -25,11 +25,18 @@ const Login = () => {
     setError('');
     try {
       const res = await loginUser({ email, password });
+
+      // Both tokens save பண்ணு
       localStorage.setItem('token', res.data.token);
+      localStorage.setItem(
+        'refresh_token',
+        res.data.refresh_token || ''
+      );
       localStorage.setItem('user', JSON.stringify({
         name: res.data.name,
         role: res.data.role,
       }));
+
       if (res.data.role === 'admin') {
         navigate('/admin');
       } else {

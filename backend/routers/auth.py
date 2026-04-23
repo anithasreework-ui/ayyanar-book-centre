@@ -1,12 +1,15 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.orm import Session
-from jose import jwt
+from jose import jwt, JWTError
 from datetime import datetime, timedelta
 from database import get_db
 import models, os, bcrypt
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 SECRET_KEY = os.getenv("SECRET_KEY", "ayyanar2024secretkey")
+REFRESH_SECRET = os.getenv(
+    "REFRESH_SECRET", "ayyanar2024refreshsecret"
+)
 
 
 def hash_password(password: str) -> str:
@@ -25,10 +28,27 @@ def verify_password(plain: str, hashed: str) -> bool:
         return False
 
 
-def create_token(user_id: int, role: str) -> str:
+def create_access_token(user_id: int, role: str) -> str:
+    # Access token — 7 days
     expire = datetime.utcnow() + timedelta(days=7)
-    data = {"sub": str(user_id), "role": role, "exp": expire}
+    data = {
+        "sub": str(user_id),
+        "role": role,
+        "exp": expire,
+        "type": "access"
+    }
     return jwt.encode(data, SECRET_KEY, algorithm="HS256")
+
+
+def create_refresh_token(user_id: int) -> str:
+    # Refresh token — 30 days
+    expire = datetime.utcnow() + timedelta(days=30)
+    data = {
+        "sub": str(user_id),
+        "exp": expire,
+        "type": "refresh"
+    }
+    return jwt.encode(data, REFRESH_SECRET, algorithm="HS256")
 
 
 @router.post("/register")
@@ -41,9 +61,8 @@ def register(user: dict, db: Session = Depends(get_db)):
     if not name or not email or not password:
         raise HTTPException(
             status_code=400,
-            detail="Name, email and password are required!"
+            detail="Name, email and password required!"
         )
-
     if len(password) < 6:
         raise HTTPException(
             status_code=400,
@@ -70,12 +89,16 @@ def register(user: dict, db: Session = Depends(get_db)):
     db.commit()
     db.refresh(new_user)
 
-    token = create_token(new_user.id, new_user.role)
+    access_token = create_access_token(new_user.id, new_user.role)
+    refresh_token = create_refresh_token(new_user.id)
+
     return {
         "message": "Registration successful!",
-        "token": token,
+        "token": access_token,
+        "refresh_token": refresh_token,
         "name": new_user.name,
-        "role": new_user.role
+        "role": new_user.role,
+        "expires_in": 604800  # 7 days in seconds
     }
 
 
@@ -94,23 +117,81 @@ def login(user: dict, db: Session = Depends(get_db)):
         models.User.email == email
     ).first()
 
-    if not db_user or not verify_password(password, db_user.password_hash):
+    if not db_user or not verify_password(
+        password, db_user.password_hash
+    ):
         raise HTTPException(
             status_code=401,
             detail="Wrong email or password!"
         )
 
-    token = create_token(db_user.id, db_user.role)
+    access_token = create_access_token(db_user.id, db_user.role)
+    refresh_token = create_refresh_token(db_user.id)
+
     return {
-        "token": token,
+        "token": access_token,
+        "refresh_token": refresh_token,
         "name": db_user.name,
         "role": db_user.role,
-        "message": "Login successful!"
+        "message": "Login successful!",
+        "expires_in": 604800
     }
+
+
+@router.post("/refresh")
+def refresh_token(data: dict, db: Session = Depends(get_db)):
+    """Auto-renew access token using refresh token"""
+    token = data.get("refresh_token", "")
+
+    if not token:
+        raise HTTPException(
+            status_code=400,
+            detail="Refresh token required!"
+        )
+
+    try:
+        payload = jwt.decode(
+            token, REFRESH_SECRET, algorithms=["HS256"]
+        )
+        if payload.get("type") != "refresh":
+            raise HTTPException(
+                status_code=401,
+                detail="Invalid token type!"
+            )
+
+        user_id = int(payload.get("sub"))
+        user = db.query(models.User).filter(
+            models.User.id == user_id
+        ).first()
+
+        if not user:
+            raise HTTPException(
+                status_code=401,
+                detail="User not found!"
+            )
+
+        # New tokens generate பண்ணு
+        new_access = create_access_token(user.id, user.role)
+        new_refresh = create_refresh_token(user.id)
+
+        return {
+            "token": new_access,
+            "refresh_token": new_refresh,
+            "name": user.name,
+            "role": user.role,
+            "expires_in": 604800
+        }
+
+    except JWTError:
+        raise HTTPException(
+            status_code=401,
+            detail="Token expired. Please login again."
+        )
+
+
 @router.post("/forgot-password")
 def forgot_password(data: dict, db: Session = Depends(get_db)):
     email = data.get("email", "").strip().lower()
-
     if not email:
         raise HTTPException(
             status_code=400,
@@ -121,28 +202,21 @@ def forgot_password(data: dict, db: Session = Depends(get_db)):
         models.User.email == email
     ).first()
 
-    # Security: always return success
-    # (don't reveal if email exists)
     if not user:
         return {
-            "message": "If this email exists, reset instructions sent!",
+            "message": "If email exists, reset link sent!",
             "status": "sent"
         }
 
-    # Generate temp password
     import random, string
     temp_password = "Reset@" + "".join(
         random.choices(string.digits, k=6)
     )
-
-    # Update password in DB
     user.password_hash = hash_password(temp_password)
     db.commit()
 
-    # In production — send email
-    # For now — return temp password (show to user)
     return {
         "message": "Password reset successful!",
         "temp_password": temp_password,
-        "note": "Use this temporary password to login, then change it."
+        "note": "Use this to login. Change password after login."
     }
