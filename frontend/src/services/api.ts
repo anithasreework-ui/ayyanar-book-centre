@@ -8,64 +8,43 @@ const API = axios.create({
   headers: { 'Content-Type': 'application/json' },
 });
 
-// ===== TOKEN HELPERS =====
-const getToken = () => localStorage.getItem('token');
-const getRefreshToken = () =>
-  localStorage.getItem('refresh_token');
-
-const saveTokens = (token: string, refreshToken: string) => {
-  localStorage.setItem('token', token);
-  localStorage.setItem('refresh_token', refreshToken);
-};
-
-// Token refresh function
 let isRefreshing = false;
 let failedQueue: any[] = [];
 
-const processQueue = (error: any, token: string | null = null) => {
+const processQueue = (
+  error: any,
+  token: string | null = null
+) => {
   failedQueue.forEach((prom) => {
-    if (error) {
-      prom.reject(error);
-    } else {
-      prom.resolve(token);
-    }
+    error ? prom.reject(error) : prom.resolve(token);
   });
   failedQueue = [];
 };
 
-const refreshAccessToken = async (): Promise<string | null> => {
-  const refreshToken = getRefreshToken();
+const tryRefresh = async (): Promise<string | null> => {
+  const refreshToken = localStorage.getItem('refresh_token');
   if (!refreshToken) return null;
 
   try {
-    const response = await axios.post(
-      `${BASE_URL}/auth/refresh`,
-      { refresh_token: refreshToken }
-    );
-    const { token, refresh_token } = response.data;
-    saveTokens(token, refresh_token);
-
-    // User info update
-    const user = JSON.parse(
-      localStorage.getItem('user') || '{}'
-    );
-    user.name = response.data.name;
-    user.role = response.data.role;
-    localStorage.setItem('user', JSON.stringify(user));
-
+    const res = await axios.post(`${BASE_URL}/auth/refresh`, {
+      refresh_token: refreshToken,
+    });
+    const { token, refresh_token } = res.data;
+    localStorage.setItem('token', token);
+    localStorage.setItem('refresh_token', refresh_token);
     return token;
-  } catch (error) {
-    // Refresh failed — only now clear storage
+  } catch {
+    // Refresh failed — clear only tokens, NOT user data
     localStorage.removeItem('token');
     localStorage.removeItem('refresh_token');
     return null;
   }
 };
 
-// ===== REQUEST INTERCEPTOR =====
+// Request interceptor
 API.interceptors.request.use(
   (config) => {
-    const token = getToken();
+    const token = localStorage.getItem('token');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -74,68 +53,51 @@ API.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
-// ===== RESPONSE INTERCEPTOR — Auto Refresh! =====
+// Response interceptor — Auto refresh, NO logout
 API.interceptors.response.use(
   (response) => response,
   async (error) => {
     const originalRequest = error.config;
 
-    // 401 error + not already retried
     if (
       error.response?.status === 401 &&
-      !originalRequest._retry
+      !originalRequest._retry &&
+      !originalRequest.url?.includes('/auth/')
     ) {
-      // Skip refresh for login/register/refresh endpoints
-      if (
-        originalRequest.url?.includes('/auth/login') ||
-        originalRequest.url?.includes('/auth/register') ||
-        originalRequest.url?.includes('/auth/refresh')
-      ) {
-        return Promise.reject(error);
-      }
-
       if (isRefreshing) {
-        // Wait for ongoing refresh
         return new Promise((resolve, reject) => {
           failedQueue.push({ resolve, reject });
-        }).then((token) => {
-          originalRequest.headers.Authorization =
-            `Bearer ${token}`;
-          return API(originalRequest);
-        }).catch((err) => Promise.reject(err));
+        })
+          .then((token) => {
+            originalRequest.headers.Authorization =
+              `Bearer ${token}`;
+            return API(originalRequest);
+          })
+          .catch((err) => Promise.reject(err));
       }
 
       originalRequest._retry = true;
       isRefreshing = true;
 
-      try {
-        const newToken = await refreshAccessToken();
+      const newToken = await tryRefresh();
+      isRefreshing = false;
 
-        if (newToken) {
-          // Token refreshed! Retry original request
-          processQueue(null, newToken);
-          originalRequest.headers.Authorization =
-            `Bearer ${newToken}`;
-          return API(originalRequest);
-        } else {
-          // No refresh token — redirect to login
-          processQueue(error, null);
-          window.location.href = '/login';
-          return Promise.reject(error);
-        }
-      } catch (refreshError) {
-        processQueue(refreshError, null);
-        return Promise.reject(refreshError);
-      } finally {
-        isRefreshing = false;
+      if (newToken) {
+        processQueue(null, newToken);
+        originalRequest.headers.Authorization =
+          `Bearer ${newToken}`;
+        return API(originalRequest);
       }
+
+      processQueue(error, null);
+      // No redirect — let user stay on page
     }
 
     return Promise.reject(error);
   }
 );
 
-// ===== API FUNCTIONS =====
+// ===== EXPORTS =====
 export const getProducts = (category?: string) =>
   API.get('/products/', { params: { category } });
 
