@@ -21,10 +21,271 @@ const TABS = [
   { key: 'payments', icon: '💳', label: 'Payments' },
   { key: 'products', icon: '📚', label: 'Products' },
   { key: 'add_product', icon: '➕', label: 'Add Product' },
+  { key: 'discounts', icon: '🏷️', label: 'Discounts' },
   { key: 'excel_upload', icon: '📊', label: 'Excel Upload' },
   { key: 'wholesale', icon: '🏭', label: 'Wholesale' },
   { key: 'shop_settings', icon: '⚙️', label: 'Shop Settings' },
 ];
+
+// ===== DISCOUNT ROW COMPONENT =====
+const DiscountRow = ({
+  product, headers, onSaved, API
+}: any) => {
+  const [mrp, setMrp] = useState(
+    product.mrp ? String(product.mrp) : ''
+  );
+  const [price, setPrice] = useState(String(product.price));
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+
+  const discount = mrp && parseFloat(mrp) > parseFloat(price)
+    ? Math.round(
+        ((parseFloat(mrp) - parseFloat(price)) /
+          parseFloat(mrp)) * 100
+      )
+    : 0;
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      await axios.put(
+        `${API}/admin/products/${product.id}`,
+        {
+          name: product.name,
+          price: parseFloat(price),
+          mrp: mrp ? parseFloat(mrp) : null,
+          stock_qty: product.stock_qty,
+          category: product.category,
+          subcategory: product.subcategory,
+          description: product.description,
+          image_url: product.image_url,
+          is_available: product.is_available,
+        },
+        { headers }
+      );
+      setSaved(true);
+      onSaved();
+      setTimeout(() => setSaved(false), 2000);
+    } catch {
+      alert('Save failed!');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <tr className="border-t hover:bg-gray-50">
+      <td className="p-3 max-w-48">
+        <p className="font-medium text-gray-800 truncate text-sm">
+          {product.name}
+        </p>
+      </td>
+      <td className="p-3">
+        <span className="bg-green-100 text-green-800 px-2 py-0.5
+                         rounded text-xs whitespace-nowrap">
+          {product.category.replace(/_/g, ' ')}
+        </span>
+      </td>
+      <td className="p-3">
+        <input
+          type="number"
+          value={mrp}
+          onChange={(e) => setMrp(e.target.value)}
+          placeholder="No MRP"
+          className="border rounded-lg px-2 py-1 text-sm w-24
+                     focus:outline-none focus:border-green-500"
+        />
+      </td>
+      <td className="p-3">
+        <input
+          type="number"
+          value={price}
+          onChange={(e) => setPrice(e.target.value)}
+          className="border rounded-lg px-2 py-1 text-sm w-24
+                     focus:outline-none focus:border-green-500"
+        />
+      </td>
+      <td className="p-3">
+        {discount > 0 ? (
+          <div>
+            <span className="bg-red-100 text-red-600 text-xs
+                             font-bold px-2 py-0.5 rounded-full">
+              {discount}% OFF
+            </span>
+            <p className="text-xs text-gray-400 mt-1">
+              Save Rs.{(parseFloat(mrp) -
+                parseFloat(price)).toFixed(0)}
+            </p>
+          </div>
+        ) : (
+          <span className="text-gray-400 text-xs">
+            No discount
+          </span>
+        )}
+      </td>
+      <td className="p-3">
+        <button
+          onClick={handleSave}
+          disabled={saving}
+          className="text-white text-xs px-3 py-1.5 rounded-lg
+                     font-medium transition-all disabled:opacity-50"
+          style={{
+            background: saved
+              ? '#16a34a'
+              : '#1a4a2e',
+          }}>
+          {saving ? '...' : saved ? '✓ Saved' : 'Save'}
+        </button>
+      </td>
+    </tr>
+  );
+};
+
+// ===== CATEGORY BULK DISCOUNT =====
+const CategoryBulkDiscount = ({
+  products, headers, onSaved, API
+}: any) => {
+  const [selectedCat, setSelectedCat] = useState('');
+  const [discountPct, setDiscountPct] = useState('');
+  const [applying, setApplying] = useState(false);
+
+  const CATS = [
+    'state_board', 'tnpsc', 'cbse', 'central_competitive',
+    'ncert', 'medical', 'stationery', 'children', 'novels',
+    'motivational', 'gifts', 'projects', 'combos', 'wholesale',
+  ];
+
+  const handleApply = async () => {
+    if (!selectedCat || !discountPct) {
+      alert('Select category and enter discount %!');
+      return;
+    }
+    const pct = parseFloat(discountPct);
+    if (pct <= 0 || pct >= 100) {
+      alert('Enter valid discount (1-99)%!');
+      return;
+    }
+    if (!window.confirm(
+      `Apply ${pct}% discount to ALL ${selectedCat} products?`
+    )) return;
+
+    setApplying(true);
+    const catProducts = products.filter(
+      (p: any) => p.category === selectedCat
+    );
+
+    let updated = 0;
+    for (const p of catProducts) {
+      try {
+        const mrp = p.mrp || p.price;
+        const newPrice = parseFloat(
+          (mrp * (1 - pct / 100)).toFixed(2)
+        );
+        await axios.put(
+          `${API}/admin/products/${p.id}`,
+          {
+            name: p.name,
+            price: newPrice,
+            mrp: mrp,
+            stock_qty: p.stock_qty,
+            category: p.category,
+            subcategory: p.subcategory,
+            description: p.description,
+            image_url: p.image_url,
+            is_available: p.is_available,
+          },
+          { headers }
+        );
+        updated++;
+      } catch { }
+    }
+    setApplying(false);
+    alert(`✅ Discount applied to ${updated} products!`);
+    onSaved();
+    setDiscountPct('');
+  };
+
+  const catProducts = products.filter(
+    (p: any) => p.category === selectedCat
+  );
+
+  return (
+    <div className="bg-white rounded-xl shadow-sm border
+                    border-gray-100 p-6">
+      <h3 className="text-lg font-bold mb-1">
+        Apply Bulk Discount by Category
+      </h3>
+      <p className="text-sm text-gray-500 mb-4">
+        Set same discount % for all products in a category at once
+      </p>
+
+      <div className="flex gap-3 flex-wrap items-end">
+        <div>
+          <label className="text-sm font-medium text-gray-700
+                             block mb-1">
+            Category
+          </label>
+          <select value={selectedCat}
+            onChange={(e) => setSelectedCat(e.target.value)}
+            className="border rounded-lg px-3 py-2 text-sm
+                       focus:outline-none focus:border-green-500">
+            <option value="">Select Category</option>
+            {CATS.map((c) => (
+              <option key={c} value={c}>
+                {c.replace(/_/g, ' ').toUpperCase()}
+                {' '}({products.filter(
+                  (p: any) => p.category === c
+                ).length} products)
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div>
+          <label className="text-sm font-medium text-gray-700
+                             block mb-1">
+            Discount %
+          </label>
+          <input
+            type="number"
+            value={discountPct}
+            onChange={(e) => setDiscountPct(e.target.value)}
+            placeholder="e.g. 10"
+            min="1" max="99"
+            className="border rounded-lg px-3 py-2 text-sm w-28
+                       focus:outline-none focus:border-green-500"
+          />
+        </div>
+
+        <button
+          onClick={handleApply}
+          disabled={applying || !selectedCat || !discountPct}
+          className="text-white px-5 py-2 rounded-lg font-bold
+                     text-sm disabled:opacity-50 transition-all"
+          style={{ background: '#1a4a2e' }}>
+          {applying ? 'Applying...' : 'Apply Discount'}
+        </button>
+      </div>
+
+      {selectedCat && catProducts.length > 0 && (
+        <div className="mt-4 p-3 rounded-xl text-sm"
+          style={{ background: '#f0f7f4',
+                   border: '1px solid #a8d5b5' }}>
+          <p style={{ color: '#1a4a2e' }} className="font-medium">
+            Preview: {catProducts.length} products in{' '}
+            {selectedCat.replace(/_/g, ' ')}
+          </p>
+          {discountPct && (
+            <p className="text-gray-600 mt-1">
+              Discount {discountPct}% will be applied to all
+              {catProducts.length} products
+            </p>
+          )}
+        </div>
+      )}
+    </div>
+  );
+};
 
 const Admin = () => {
   const [products, setProducts] = useState([]);
@@ -1391,6 +1652,65 @@ const Admin = () => {
                 .xlsx or .xls files only
               </p>
             </label>
+          </div>
+        )}
+
+        {/* ===== DISCOUNTS ===== */}
+        {activeTab === 'discounts' && (
+          <div>
+            <div className="bg-white rounded-xl shadow-sm border
+                            border-gray-100 p-6 mb-4">
+              <h2 className="text-xl font-bold mb-1">
+                🏷️ Manage Discounts
+              </h2>
+              <p className="text-sm text-gray-500 mb-6">
+                Edit MRP and selling price for each product to
+                set discount. Customers see the % off automatically.
+              </p>
+
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      {['Product', 'Category', 'MRP (Rs.)',
+                        'Sell Price (Rs.)', 'Discount', 'Save'].map(
+                        (h) => (
+                          <th key={h}
+                            className="text-left p-3 text-gray-600
+                                       font-medium whitespace-nowrap">
+                            {h}
+                          </th>
+                        )
+                      )}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {products.map((p: any) => (
+                      <DiscountRow
+                        key={p.id}
+                        product={p}
+                        headers={headers}
+                        onSaved={fetchStats}
+                        API={API}
+                      />
+                    ))}
+                  </tbody>
+                </table>
+                {products.length === 0 && (
+                  <div className="text-center py-10">
+                    <p className="text-gray-400">No products yet!</p>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Category Bulk Discount */}
+            <CategoryBulkDiscount
+              products={products}
+              headers={headers}
+              onSaved={fetchStats}
+              API={API}
+            />
           </div>
         )}
 

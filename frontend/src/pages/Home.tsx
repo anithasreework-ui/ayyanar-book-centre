@@ -7,20 +7,34 @@ import axios from 'axios';
 const API = 'https://ayyanar-book-centre-1.onrender.com';
 
 const CATEGORIES = [
-  { label: 'State Board Textbooks & Guide', icon: '📗', value: 'state_board' },
-  { label: 'State Board TNPSC Competitive', icon: '📋', value: 'tnpsc' },
-  { label: 'CBSE Textbooks & Guide', icon: '📘', value: 'cbse' },
-  { label: 'Central Board Competitive', icon: '🏆', value: 'central_competitive' },
-  { label: 'NCERT / NEET Books', icon: '📕', value: 'ncert' },
-  { label: 'Medical Books', icon: '🏥', value: 'medical' },
-  { label: 'Stationery', icon: '✏️', value: 'stationery' },
-  { label: 'Children Books', icon: '👶', value: 'children' },
-  { label: 'Novels', icon: '📖', value: 'novels' },
-  { label: 'Motivational Books', icon: '💪', value: 'motivational' },
-  { label: 'Gifts & Hampers', icon: '🎁', value: 'gifts' },
-  { label: 'School Projects', icon: '🔬', value: 'projects' },
-  { label: 'Combos', icon: '🎯', value: 'combos' },
-  { label: 'Wholesale', icon: '🏭', value: 'wholesale' },
+  { label: 'State Board Textbooks', value: 'state_board',
+    bg: '#1a4a2e', abbr: 'SB' },
+  { label: 'TNPSC Competitive', value: 'tnpsc',
+    bg: '#1e3a5f', abbr: 'TN' },
+  { label: 'CBSE Textbooks', value: 'cbse',
+    bg: '#5a2d82', abbr: 'CB' },
+  { label: 'Central Competitive', value: 'central_competitive',
+    bg: '#7c2d12', abbr: 'CC' },
+  { label: 'NCERT / NEET', value: 'ncert',
+    bg: '#c2410c', abbr: 'NE' },
+  { label: 'Medical Books', value: 'medical',
+    bg: '#0e7490', abbr: 'MD' },
+  { label: 'Stationery', value: 'stationery',
+    bg: '#b45309', abbr: 'ST' },
+  { label: 'Children Books', value: 'children',
+    bg: '#be185d', abbr: 'CH' },
+  { label: 'Novels', value: 'novels',
+    bg: '#374151', abbr: 'NV' },
+  { label: 'Motivational', value: 'motivational',
+    bg: '#065f46', abbr: 'MO' },
+  { label: 'Gifts & Hampers', value: 'gifts',
+    bg: '#9d174d', abbr: 'GH' },
+  { label: 'School Projects', value: 'projects',
+    bg: '#1d4ed8', abbr: 'SP' },
+  { label: 'Combos', value: 'combos',
+    bg: '#6b21a8', abbr: 'CO' },
+  { label: 'Wholesale', value: 'wholesale',
+    bg: '#1a4a2e', abbr: 'WS' },
 ];
 
 const Home = () => {
@@ -29,156 +43,313 @@ const Home = () => {
   const [settings, setSettings] = useState<any>({
     shop_name: 'Ayyanar Book Centre',
     phone: '+91 9894235330',
-    customer_care: '+91 9894235330',
     email: 'ayyanarbookcentredgl1@gmail.com',
-    instagram: '@ayyanarbookcentre',
-    shop_address: 'Dindigul, Tamil Nadu, India - 624 001',
-    working_hours: 'Monday to Saturday, 9:00 AM to 8:00 PM',
+    shop_address: '14, Dudley School Building, AMC Road, Dindigul',
+    working_hours: 'Monday to Saturday, 9:00 AM to 9:00 PM',
     tagline: 'Knowledge is the floor of success',
+    instagram: '@ayyanarbookcentre',
     branch_2_name: '',
-    branch_2_address: '',
-    branch_2_phone: '',
   });
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Products load
     getProducts()
       .then((res) => setProducts(res.data))
       .finally(() => setLoading(false));
 
-    // Settings load from DB
     axios.get(`${API}/settings/public`)
-      .then((res) => {
-        if (res.data) setSettings(res.data);
-      })
+      .then((res) => { if (res.data) setSettings(res.data); })
       .catch(() => {});
   }, []);
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div style={{ background: '#faf9f7', minHeight: '100vh',
+      fontFamily: "'Georgia', 'Times New Roman', serif" }}>
 
-      {/* Hero Banner — Dark Green Theme */}
-      <div className="text-white py-14 px-4"
-        style={{
-          background: 'linear-gradient(135deg, #1a4a2e 0%, #2d7a4f 50%, #1a4a2e 100%)'
-        }}>
-        <div className="max-w-5xl mx-auto">
-          <div className="flex flex-col md:flex-row items-center
-                          justify-center gap-6 mb-6">
+      {/* ===== HERO ===== */}
+      <div style={{
+        background: 'linear-gradient(160deg, #0f2d1a 0%, #1a4a2e 60%, #2d6b45 100%)',
+        position: 'relative', overflow: 'hidden',
+        padding: '60px 24px 80px',
+      }}>
+        {/* Decorative lines */}
+        <div style={{
+          position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+          backgroundImage: `repeating-linear-gradient(
+            90deg, transparent, transparent 80px,
+            rgba(255,255,255,0.02) 80px, rgba(255,255,255,0.02) 81px
+          )`,
+          pointerEvents: 'none',
+        }} />
 
-            {/* Thiruvalluvar Logo */}
-            <div className="flex-shrink-0">
-              <div className="w-28 h-28 rounded-full border-4
-                              border-yellow-400 overflow-hidden
-                              shadow-2xl bg-yellow-50">
-                <img
-                  src="/logo.jpg"
-                  alt="Thiruvalluvar"
-                  className="w-full h-full object-cover object-top"
-                  onError={(e: any) => {
-                    e.target.style.display = 'none';
-                    e.target.parentElement.innerHTML =
-                      '<div style="display:flex;align-items:center;justify-content:center;height:100%;font-size:48px">📚</div>';
-                  }}
-                />
-              </div>
+        <div style={{ maxWidth: '900px', margin: '0 auto',
+          position: 'relative', zIndex: 1 }}>
+
+          <div style={{ display: 'flex', alignItems: 'center',
+            justifyContent: 'center', gap: '28px',
+            flexWrap: 'wrap', marginBottom: '28px' }}>
+
+            {/* Thiruvalluvar */}
+            <div style={{
+              width: '110px', height: '110px', borderRadius: '50%',
+              border: '3px solid #d4a853',
+              overflow: 'hidden', flexShrink: 0,
+              boxShadow: '0 0 0 6px rgba(212,168,83,0.15)',
+            }}>
+              <img src="/logo.jpg" alt="Thiruvalluvar"
+                style={{ width: '100%', height: '100%',
+                  objectFit: 'cover', objectPosition: 'top' }}
+                onError={(e: any) => {
+                  e.target.parentElement.style.background = '#1a4a2e';
+                  e.target.style.display = 'none';
+                }}
+              />
             </div>
 
-            {/* Title */}
-            <div className="text-center md:text-left">
-              <h1 className="text-4xl md:text-5xl font-bold mb-1">
+            <div style={{ textAlign: 'center' }}>
+              <div style={{
+                display: 'inline-block',
+                background: 'rgba(212,168,83,0.15)',
+                border: '1px solid rgba(212,168,83,0.3)',
+                borderRadius: '4px',
+                padding: '4px 14px',
+                marginBottom: '10px',
+              }}>
+                <span style={{ color: '#d4a853', fontSize: '11px',
+                  letterSpacing: '3px', fontFamily: 'sans-serif',
+                  textTransform: 'uppercase' }}>
+                  Est. Dindigul, Tamil Nadu
+                </span>
+              </div>
+
+              <h1 style={{
+                color: '#ffffff', fontSize: 'clamp(28px, 5vw, 52px)',
+                fontWeight: '700', lineHeight: '1.1',
+                margin: '0 0 8px',
+                letterSpacing: '-0.5px',
+              }}>
                 {settings.shop_name || 'Ayyanar Book Centre'}
               </h1>
-              <p className="text-yellow-300 text-sm md:text-base
-                            italic mb-1">
-                "{settings.tagline || 'Knowledge is the floor of success'}"
+
+              <p style={{
+                color: '#d4a853', fontStyle: 'italic',
+                fontSize: 'clamp(13px, 2vw, 16px)',
+                margin: '0 0 4px',
+              }}>
+                "{settings.tagline ||
+                  'Knowledge is the floor of success'}"
               </p>
-              <p className="text-green-200 text-sm mb-1">
-                Dindigul's Most Trusted Bookshop
-              </p>
-              <p className="text-green-300 text-xs">
-                📍 14, Dudley School Building, AMC Road, Dindigul, Tamil Nadu 624001
+
+              <p style={{
+                color: 'rgba(255,255,255,0.5)',
+                fontSize: '12px', fontFamily: 'sans-serif',
+                letterSpacing: '1px',
+              }}>
+                DINDIGUL'S MOST TRUSTED BOOKSHOP
               </p>
             </div>
           </div>
 
-          <p className="text-center text-green-100 mb-2">
-            Books • Stationery • School Accessories • Worldwide Delivery
-          </p>
+          {/* Address bar */}
+          <div style={{
+            background: 'rgba(255,255,255,0.06)',
+            border: '1px solid rgba(255,255,255,0.1)',
+            borderRadius: '8px', padding: '12px 20px',
+            textAlign: 'center', marginBottom: '28px',
+          }}>
+            <p style={{ color: 'rgba(255,255,255,0.7)',
+              fontSize: '13px', fontFamily: 'sans-serif',
+              margin: 0 }}>
+              <span style={{ color: '#d4a853' }}>&#9679;</span>
+              {' '}14, Dudley School Building, AMC Road,
+              Dindigul — 624001
+              {' '}<span style={{ color: '#d4a853' }}>&#9679;</span>
+              {' '}{settings.phone || '+91 9894235330'}
+            </p>
+          </div>
 
-          <div className="flex justify-center gap-3 mt-6">
+          {/* CTA Buttons */}
+          <div style={{ display: 'flex', gap: '12px',
+            justifyContent: 'center', flexWrap: 'wrap' }}>
             <button
               onClick={() => navigate('/products')}
-              className="bg-yellow-400 text-gray-900 px-8 py-3
-                         rounded-full font-bold text-lg
-                         hover:bg-yellow-300 transition-all
-                         hover:scale-105 shadow-lg">
-              Shop Now →
+              style={{
+                background: '#d4a853', color: '#0f2d1a',
+                border: 'none', padding: '14px 36px',
+                borderRadius: '6px', fontSize: '15px',
+                fontWeight: '700', cursor: 'pointer',
+                fontFamily: 'sans-serif', letterSpacing: '0.5px',
+                transition: 'all 0.2s',
+              }}
+              onMouseEnter={(e) => {
+                (e.target as HTMLButtonElement).style.background =
+                  '#e6be6b';
+              }}
+              onMouseLeave={(e) => {
+                (e.target as HTMLButtonElement).style.background =
+                  '#d4a853';
+              }}>
+              Browse Collection
             </button>
             <button
               onClick={() => navigate('/wholesale')}
-              className="bg-transparent border-2 border-yellow-400
-                         text-yellow-400 px-6 py-3 rounded-full
-                         font-bold hover:bg-yellow-400
-                         hover:text-gray-900 transition-all">
-              Wholesale
+              style={{
+                background: 'transparent',
+                color: '#d4a853',
+                border: '1.5px solid #d4a853',
+                padding: '14px 32px', borderRadius: '6px',
+                fontSize: '15px', fontWeight: '600',
+                cursor: 'pointer', fontFamily: 'sans-serif',
+                letterSpacing: '0.5px', transition: 'all 0.2s',
+              }}
+              onMouseEnter={(e) => {
+                (e.target as HTMLButtonElement).style.background =
+                  'rgba(212,168,83,0.1)';
+              }}
+              onMouseLeave={(e) => {
+                (e.target as HTMLButtonElement).style.background =
+                  'transparent';
+              }}>
+              Wholesale Enquiry
             </button>
           </div>
         </div>
       </div>
 
-      {/* Features Strip */}
-      <div className="text-white py-3 px-4"
-        style={{ background: '#1a4a2e' }}>
-        <div className="max-w-5xl mx-auto flex justify-center
-                        flex-wrap gap-6 text-xs md:text-sm">
+      {/* ===== FEATURES BAR ===== */}
+      <div style={{
+        background: '#1a4a2e',
+        borderTop: '1px solid rgba(212,168,83,0.3)',
+      }}>
+        <div style={{
+          maxWidth: '900px', margin: '0 auto',
+          padding: '14px 24px',
+          display: 'flex', justifyContent: 'center',
+          flexWrap: 'wrap', gap: '8px 32px',
+        }}>
           {[
-            { icon: '🆓', text: 'Free Delivery under 1kg' },
-            { icon: '🌍', text: 'Worldwide Shipping' },
-            { icon: '🏪', text: 'Store Pickup Available' },
-            { icon: '📦', text: 'Wholesaler & Retailer for Schools & Colleges' },
-          ].map((item) => (
-            <div key={item.text}
-              className="flex items-center gap-1">
-              <span>{item.icon}</span>
-              <span className="text-green-100">{item.text}</span>
+            'Free Delivery under 1kg',
+            'Worldwide Shipping',
+            'Store Pickup — Dindigul',
+            'Wholesale for Schools & Colleges',
+          ].map((text, i) => (
+            <div key={i} style={{
+              display: 'flex', alignItems: 'center',
+              gap: '8px',
+            }}>
+              {i > 0 && (
+                <span style={{
+                  color: 'rgba(212,168,83,0.4)',
+                  fontSize: '16px',
+                  display: window.innerWidth < 600
+                    ? 'none' : 'block',
+                }}>|</span>
+              )}
+              <span style={{
+                color: 'rgba(255,255,255,0.8)',
+                fontSize: '12px',
+                fontFamily: 'sans-serif',
+                letterSpacing: '0.5px',
+              }}>
+                {text}
+              </span>
             </div>
           ))}
         </div>
       </div>
 
-      <div className="max-w-6xl mx-auto px-4 py-10">
+      <div style={{ maxWidth: '1200px', margin: '0 auto',
+        padding: '48px 24px' }}>
 
-        {/* Categories */}
-        <div className="mb-10">
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="text-2xl font-bold text-gray-800">
-              Browse Categories
+        {/* ===== CATEGORIES ===== */}
+        <div style={{ marginBottom: '56px' }}>
+          <div style={{
+            display: 'flex', justifyContent: 'space-between',
+            alignItems: 'baseline', marginBottom: '24px',
+            borderBottom: '2px solid #1a4a2e',
+            paddingBottom: '12px',
+          }}>
+            <h2 style={{
+              fontSize: '24px', fontWeight: '700',
+              color: '#1a1a1a', margin: 0,
+            }}>
+              Browse by Category
             </h2>
             <button
               onClick={() => navigate('/products')}
-              className="text-green-700 text-sm hover:underline font-medium">
-              View All →
+              style={{
+                color: '#1a4a2e', background: 'none',
+                border: 'none', cursor: 'pointer',
+                fontSize: '13px', fontFamily: 'sans-serif',
+                letterSpacing: '0.5px', fontWeight: '600',
+              }}>
+              VIEW ALL →
             </button>
           </div>
 
-          <div className="grid grid-cols-4 md:grid-cols-7 gap-2">
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns:
+              'repeat(auto-fill, minmax(140px, 1fr))',
+            gap: '12px',
+          }}>
             {CATEGORIES.map((cat) => (
               <button
                 key={cat.value}
-                onClick={() => navigate(`/products?category=${cat.value}`)}
-                className="flex flex-col items-center bg-white
-                           hover:bg-green-50 border border-gray-100
-                           hover:border-green-400 rounded-xl p-2
-                           text-center transition-all
-                           hover:-translate-y-1 shadow-sm group">
-                <span className="text-2xl mb-1 group-hover:scale-110
-                                 transition-transform">
-                  {cat.icon}
-                </span>
-                <span className="text-xs font-medium text-gray-600
-                                 leading-tight">
+                onClick={() =>
+                  navigate(`/products?category=${cat.value}`)
+                }
+                style={{
+                  background: '#ffffff',
+                  border: '1px solid #e8e4df',
+                  borderRadius: '8px',
+                  padding: '16px 12px',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  gap: '10px',
+                  transition: 'all 0.2s',
+                  boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
+                }}
+                onMouseEnter={(e) => {
+                  const el = e.currentTarget;
+                  el.style.borderColor = cat.bg;
+                  el.style.transform = 'translateY(-2px)';
+                  el.style.boxShadow =
+                    `0 4px 12px rgba(0,0,0,0.1)`;
+                }}
+                onMouseLeave={(e) => {
+                  const el = e.currentTarget;
+                  el.style.borderColor = '#e8e4df';
+                  el.style.transform = 'translateY(0)';
+                  el.style.boxShadow =
+                    '0 1px 3px rgba(0,0,0,0.04)';
+                }}
+              >
+                {/* Colored initial badge */}
+                <div style={{
+                  width: '40px', height: '40px',
+                  borderRadius: '8px',
+                  background: cat.bg,
+                  display: 'flex', alignItems: 'center',
+                  justifyContent: 'center',
+                  color: '#fff',
+                  fontSize: '14px', fontWeight: '700',
+                  fontFamily: 'sans-serif',
+                  letterSpacing: '0.5px',
+                  flexShrink: 0,
+                }}>
+                  {cat.abbr}
+                </div>
+                <span style={{
+                  fontSize: '11px',
+                  color: '#374151',
+                  textAlign: 'center',
+                  lineHeight: '1.3',
+                  fontFamily: 'sans-serif',
+                  fontWeight: '600',
+                }}>
                   {cat.label}
                 </span>
               </button>
@@ -186,213 +357,417 @@ const Home = () => {
           </div>
         </div>
 
-        {/* Featured Products */}
-        <div className="mb-10">
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="text-2xl font-bold text-gray-800">
-              Featured Products
+        {/* ===== FEATURED PRODUCTS ===== */}
+        <div style={{ marginBottom: '56px' }}>
+          <div style={{
+            display: 'flex', justifyContent: 'space-between',
+            alignItems: 'baseline', marginBottom: '24px',
+            borderBottom: '2px solid #1a4a2e',
+            paddingBottom: '12px',
+          }}>
+            <h2 style={{
+              fontSize: '24px', fontWeight: '700',
+              color: '#1a1a1a', margin: 0,
+            }}>
+              Featured Books
             </h2>
             <button
               onClick={() => navigate('/products')}
-              className="text-green-700 text-sm hover:underline font-medium">
-              View All →
+              style={{
+                color: '#1a4a2e', background: 'none',
+                border: 'none', cursor: 'pointer',
+                fontSize: '13px', fontFamily: 'sans-serif',
+                letterSpacing: '0.5px', fontWeight: '600',
+              }}>
+              VIEW ALL →
             </button>
           </div>
 
           {loading ? (
-            <div className="text-center py-16">
-              <p className="text-gray-400 text-lg">
-                Loading products...
-              </p>
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns:
+                'repeat(auto-fill, minmax(200px, 1fr))',
+              gap: '20px',
+            }}>
+              {[...Array(4)].map((_, i) => (
+                <div key={i} style={{
+                  background: '#ffffff',
+                  borderRadius: '10px',
+                  overflow: 'hidden',
+                  border: '1px solid #e8e4df',
+                }}>
+                  <div style={{
+                    height: '200px',
+                    background: 'linear-gradient(90deg, #f0ede8 25%, #faf9f7 50%, #f0ede8 75%)',
+                    backgroundSize: '200% 100%',
+                    animation: 'shimmer 1.5s infinite',
+                  }} />
+                  <div style={{ padding: '16px' }}>
+                    <div style={{
+                      height: '12px', background: '#f0ede8',
+                      borderRadius: '4px', marginBottom: '8px',
+                    }} />
+                    <div style={{
+                      height: '12px', background: '#f0ede8',
+                      borderRadius: '4px', width: '60%',
+                    }} />
+                  </div>
+                </div>
+              ))}
             </div>
           ) : products.length === 0 ? (
-            <div className="text-center py-16">
-              <p className="text-5xl mb-4">📚</p>
-              <p className="text-gray-500">Products coming soon!</p>
-              <button
-                onClick={() => navigate('/admin')}
-                className="mt-4 bg-green-700 text-white px-6 py-2
-                           rounded-lg text-sm hover:bg-green-600">
-                Add Products (Admin)
-              </button>
+            <div style={{ textAlign: 'center', padding: '60px',
+              background: '#fff',
+              borderRadius: '12px',
+              border: '1px solid #e8e4df' }}>
+              <div style={{
+                width: '60px', height: '80px', margin: '0 auto 16px',
+                background: '#1a4a2e', borderRadius: '4px 4px 0 0',
+                position: 'relative',
+              }}>
+                <div style={{
+                  position: 'absolute', bottom: '8px',
+                  left: '8px', right: '8px',
+                  height: '3px', background: '#d4a853',
+                  borderRadius: '2px',
+                }} />
+              </div>
+              <p style={{
+                color: '#374151', fontSize: '16px',
+                fontFamily: 'sans-serif', margin: 0,
+              }}>
+                Products coming soon!
+              </p>
             </div>
           ) : (
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns:
+                'repeat(auto-fill, minmax(200px, 1fr))',
+              gap: '20px',
+            }}>
               {products.slice(0, 8).map((product: any) => (
-                <div key={product.id} style={{ height: '100%' }}>
-                  <ProductCard product={product} />
-                </div>
+                <ProductCard key={product.id} product={product} />
               ))}
             </div>
           )}
         </div>
 
-        {/* Why Choose Us */}
-        <div className="mb-10">
-          <h2 className="text-2xl font-bold text-gray-800 mb-4 text-center">
-            Why Choose Ayyanar Book Centre?
+        {/* ===== WHY US — Editorial Style ===== */}
+        <div style={{
+          background: '#1a4a2e',
+          borderRadius: '12px',
+          padding: '40px 32px',
+          marginBottom: '48px',
+        }}>
+          <h2 style={{
+            color: '#d4a853', fontSize: '13px',
+            letterSpacing: '3px', fontFamily: 'sans-serif',
+            textTransform: 'uppercase', margin: '0 0 8px',
+          }}>
+            WHY CHOOSE US
           </h2>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <h3 style={{
+            color: '#ffffff', fontSize: '26px',
+            margin: '0 0 32px', fontWeight: '700',
+          }}>
+            Dindigul's most trusted book store since years
+          </h3>
+
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns:
+              'repeat(auto-fill, minmax(200px, 1fr))',
+            gap: '24px',
+          }}>
             {[
-              { icon: '📚', title: 'Huge Collection',
-                desc: 'State Board, CBSE, TNPSC & more' },
-              { icon: '🆓', title: 'Free Delivery',
-                desc: 'Under 1kg — FREE across India' },
-              { icon: '🌍', title: 'Worldwide',
-                desc: 'International shipping available' },
-              { icon: '🏪', title: 'Store Pickup',
-                desc: 'Collect at Dindigul shop' },
-              { icon: '📦', title: 'Wholesale',
-                desc: 'MOU for schools & colleges' },
-              { icon: '🎁', title: 'Custom Gifts',
-                desc: 'Personalised hampers' },
-              { icon: '🤖', title: 'AI Assistant',
-                desc: '24/7 chatbot support' },
-              { icon: '⚡', title: 'Fast Orders',
-                desc: 'Quick processing & dispatch' },
+              { title: 'Free Delivery',
+                desc: 'Books under 1kg ship free across India' },
+              { title: 'Worldwide Shipping',
+                desc: 'International delivery available' },
+              { title: 'Store Pickup',
+                desc: 'Collect at our Dindigul shop — 9AM to 9PM' },
+              { title: 'School Wholesale',
+                desc: 'MOU agreements for schools & colleges' },
+              { title: 'All Boards',
+                desc: 'State Board, CBSE, NCERT & competitive' },
+              { title: 'AI Assistant',
+                desc: '24/7 chatbot for queries & help' },
             ].map((item) => (
-              <div key={item.title}
-                className="bg-white rounded-xl p-4 shadow-sm
-                           border border-gray-100 text-center
-                           hover:shadow-md hover:border-green-200
-                           transition-all">
-                <p className="text-3xl mb-2">{item.icon}</p>
-                <p className="font-bold text-gray-800 text-sm">
+              <div key={item.title} style={{
+                borderLeft: '2px solid #d4a853',
+                paddingLeft: '16px',
+              }}>
+                <p style={{
+                  color: '#d4a853', fontWeight: '700',
+                  fontSize: '14px', margin: '0 0 4px',
+                  fontFamily: 'sans-serif',
+                }}>
                   {item.title}
                 </p>
-                <p className="text-xs text-gray-500 mt-1">{item.desc}</p>
+                <p style={{
+                  color: 'rgba(255,255,255,0.65)',
+                  fontSize: '13px', margin: 0,
+                  fontFamily: 'sans-serif', lineHeight: '1.4',
+                }}>
+                  {item.desc}
+                </p>
               </div>
             ))}
           </div>
         </div>
 
-        {/* CTA Banner */}
-        <div className="rounded-2xl p-6 text-center mb-10 text-white"
-          style={{ background: 'linear-gradient(135deg, #1a4a2e, #2d7a4f)' }}>
-          <h2 className="text-xl font-bold mb-1">
-            Schools & Colleges — Special Wholesale Pricing!
-          </h2>
-          <p className="text-green-100 text-sm mb-4">
-            MOU agreements available. Contact us for bulk orders.
-          </p>
+        {/* ===== WHOLESALE CTA ===== */}
+        <div style={{
+          border: '2px solid #1a4a2e',
+          borderRadius: '12px',
+          padding: '32px',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          flexWrap: 'wrap',
+          gap: '20px',
+          marginBottom: '48px',
+        }}>
+          <div>
+            <p style={{
+              color: '#1a4a2e', fontSize: '13px',
+              letterSpacing: '2px', fontFamily: 'sans-serif',
+              margin: '0 0 6px', textTransform: 'uppercase',
+            }}>
+              FOR SCHOOLS & COLLEGES
+            </p>
+            <h3 style={{
+              color: '#1a1a1a', fontSize: '22px',
+              margin: 0, fontWeight: '700',
+            }}>
+              Wholesale & Bulk Orders Available
+            </h3>
+            <p style={{
+              color: '#6b7280', fontSize: '14px',
+              fontFamily: 'sans-serif', margin: '6px 0 0',
+            }}>
+              Special pricing · MOU agreements · Dedicated support
+            </p>
+          </div>
           <button
             onClick={() => navigate('/wholesale')}
-            className="bg-yellow-400 text-gray-900 px-6 py-2 rounded-full
-                       font-bold hover:bg-yellow-300 transition">
+            style={{
+              background: '#1a4a2e', color: '#ffffff',
+              border: 'none', padding: '14px 28px',
+              borderRadius: '6px', fontSize: '14px',
+              fontWeight: '700', cursor: 'pointer',
+              fontFamily: 'sans-serif', letterSpacing: '0.5px',
+              flexShrink: 0,
+            }}>
             Enquire Now →
           </button>
         </div>
       </div>
 
-      {/* Footer — Dark Green */}
-      <footer className="text-white py-10 px-4"
-        style={{ background: '#1a3d2b' }}>
-        <div className="max-w-6xl mx-auto grid grid-cols-2
-                        md:grid-cols-4 gap-6 text-sm mb-8">
+      {/* ===== FOOTER ===== */}
+      <footer style={{
+        background: '#0f2d1a',
+        borderTop: '1px solid rgba(212,168,83,0.2)',
+        padding: '48px 24px 24px',
+      }}>
+        <div style={{
+          maxWidth: '1200px', margin: '0 auto',
+        }}>
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns:
+              'repeat(auto-fill, minmax(200px, 1fr))',
+            gap: '32px', marginBottom: '40px',
+          }}>
 
-          {/* Logo + Name */}
-          <div>
-            <div className="flex items-center gap-2 mb-3">
-              <div className="w-10 h-10 rounded-full border-2
-                              border-yellow-400 overflow-hidden
-                              bg-yellow-50">
-                <img
-                  src="/logo.jpg"
-                  alt="Logo"
-                  className="w-full h-full object-cover object-top"
-                  onError={(e: any) => {
-                    e.target.style.display = 'none';
-                    e.target.parentElement.innerHTML = '📚';
-                  }}
-                />
+            {/* Brand */}
+            <div>
+              <div style={{
+                display: 'flex', alignItems: 'center',
+                gap: '10px', marginBottom: '12px',
+              }}>
+                <div style={{
+                  width: '36px', height: '36px',
+                  borderRadius: '50%',
+                  border: '2px solid #d4a853',
+                  overflow: 'hidden',
+                }}>
+                  <img src="/logo.jpg" alt="Logo"
+                    style={{ width: '100%', height: '100%',
+                      objectFit: 'cover', objectPosition: 'top' }}
+                    onError={(e: any) => {
+                      e.target.style.display = 'none';
+                    }}
+                  />
+                </div>
+                <span style={{
+                  color: '#ffffff', fontWeight: '700',
+                  fontSize: '14px',
+                }}>
+                  {settings.shop_name || 'Ayyanar Book Centre'}
+                </span>
               </div>
-              <p className="font-bold">
-                {settings.shop_name || 'Ayyanar Book Centre'}
+              <p style={{
+                color: 'rgba(255,255,255,0.45)',
+                fontSize: '12px', fontFamily: 'sans-serif',
+                lineHeight: '1.6', margin: 0,
+              }}>
+                {settings.shop_address ||
+                  '14, Dudley School Building, AMC Road, Dindigul'}
               </p>
             </div>
-            <p className="text-green-300 text-xs">
-              {settings.shop_address || 'Dindigul, Tamil Nadu'}
-            </p>
-            {settings.branch_2_name && (
-              <div className="mt-2">
-                <p className="text-green-400 text-xs font-medium">
-                  Branch 2:
-                </p>
-                <p className="text-green-300 text-xs">
-                  {settings.branch_2_name}
-                </p>
-                <p className="text-green-300 text-xs">
-                  {settings.branch_2_address}
-                </p>
+
+            {/* Contact */}
+            <div>
+              <p style={{
+                color: '#d4a853', fontSize: '11px',
+                letterSpacing: '2px', fontFamily: 'sans-serif',
+                textTransform: 'uppercase', margin: '0 0 12px',
+              }}>
+                Contact
+              </p>
+              <div style={{ display: 'flex', flexDirection: 'column',
+                gap: '6px' }}>
+                {[
+                  settings.phone || '+91 9894235330',
+                  settings.email ||
+                    'ayyanarbookcentredgl1@gmail.com',
+                  settings.instagram || '@ayyanarbookcentre',
+                  settings.working_hours ||
+                    'Mon–Sat: 9AM–9PM',
+                ].map((item, i) => (
+                  <p key={i} style={{
+                    color: 'rgba(255,255,255,0.55)',
+                    fontSize: '12px', fontFamily: 'sans-serif',
+                    margin: 0,
+                  }}>
+                    {item}
+                  </p>
+                ))}
               </div>
-            )}
-          </div>
-
-          {/* Contact — Dynamic from Settings */}
-          <div>
-            <p className="font-bold mb-3">Contact Us</p>
-            <div className="space-y-1 text-green-300 text-xs">
-              <p>📞 {settings.phone || '+91 9894235330'}</p>
-              {settings.branch_2_phone && (
-                <p>📞 Branch 2: {settings.branch_2_phone}</p>
-              )}
-              <p>✉️ {settings.email || 'ayyanarbookcentredgl1@gmail.com'}</p>
-              <p>📸 {settings.instagram || '@ayyanarbookcentre'}</p>
-              <p>🕐 {settings.working_hours || 'Mon-Sat: 9AM-8PM'}</p>
             </div>
-          </div>
 
-          {/* Quick Links */}
-          <div>
-            <p className="font-bold mb-3">Quick Links</p>
-            <div className="space-y-1">
-              {[
-                { href: '/products', label: '📚 Products' },
-                { href: '/wholesale', label: '🏭 Wholesale' },
-                { href: '/orders', label: '📦 Track Order' },
-                { href: '/my-orders', label: '📋 My Orders' },
-                { href: '/terms', label: '📋 Terms & Conditions' },
-              ].map((link) => (
+            {/* Links */}
+            <div>
+              <p style={{
+                color: '#d4a853', fontSize: '11px',
+                letterSpacing: '2px', fontFamily: 'sans-serif',
+                textTransform: 'uppercase', margin: '0 0 12px',
+              }}>
+                Quick Links
+              </p>
+              <div style={{ display: 'flex',
+                flexDirection: 'column', gap: '6px' }}>
+                {[
+                  { label: 'Products', path: '/products' },
+                  { label: 'Wholesale', path: '/wholesale' },
+                  { label: 'Track Order', path: '/orders' },
+                  { label: 'My Orders', path: '/my-orders' },
+                  { label: 'Terms & Conditions',
+                    path: '/terms' },
+                ].map((link) => (
+                  <button
+                    key={link.path}
+                    onClick={() => navigate(link.path)}
+                    style={{
+                      color: 'rgba(255,255,255,0.55)',
+                      background: 'none', border: 'none',
+                      cursor: 'pointer', fontSize: '12px',
+                      fontFamily: 'sans-serif',
+                      textAlign: 'left', padding: 0,
+                      transition: 'color 0.2s',
+                    }}
+                    onMouseEnter={(e) => {
+                      (e.target as HTMLButtonElement).style.color =
+                        '#d4a853';
+                    }}
+                    onMouseLeave={(e) => {
+                      (e.target as HTMLButtonElement).style.color =
+                        'rgba(255,255,255,0.55)';
+                    }}>
+                    {link.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Delivery */}
+            <div>
+              <p style={{
+                color: '#d4a853', fontSize: '11px',
+                letterSpacing: '2px', fontFamily: 'sans-serif',
+                textTransform: 'uppercase', margin: '0 0 12px',
+              }}>
+                Delivery
+              </p>
+              <div style={{ display: 'flex',
+                flexDirection: 'column', gap: '6px' }}>
+                {[
+                  'Under 1kg — FREE',
+                  'Tamil Nadu — Rs.80',
+                  'Other States — Rs.150',
+                  'International — Rs.800+',
+                ].map((item) => (
+                  <p key={item} style={{
+                    color: 'rgba(255,255,255,0.55)',
+                    fontSize: '12px', fontFamily: 'sans-serif',
+                    margin: 0,
+                  }}>
+                    {item}
+                  </p>
+                ))}
                 <button
-                  key={link.href}
-                  onClick={() => navigate(link.href)}
-                  className="block text-green-300 hover:text-yellow-400
-                             text-xs transition-colors text-left">
-                  {link.label}
+                  onClick={() => navigate('/terms')}
+                  style={{
+                    color: '#d4a853', background: 'none',
+                    border: 'none', cursor: 'pointer',
+                    fontSize: '12px', fontFamily: 'sans-serif',
+                    textAlign: 'left', padding: 0,
+                    marginTop: '4px',
+                  }}>
+                  Full policy →
                 </button>
-              ))}
+              </div>
             </div>
           </div>
 
-          {/* Delivery Info */}
-          <div>
-            <p className="font-bold mb-3">Delivery Info</p>
-            <div className="space-y-1 text-green-300 text-xs">
-              <p>🆓 Under 1kg — FREE</p>
-              <p>🏠 Tamil Nadu — Rs.80</p>
-              <p>📦 Other States — Rs.150</p>
-              <p>✈️ International — Rs.800+</p>
-              <button
-                onClick={() => navigate('/terms')}
-                className="text-yellow-400 hover:underline block mt-2
-                           text-left">
-                Full delivery policy →
-              </button>
-            </div>
+          {/* Bottom bar */}
+          <div style={{
+            borderTop: '1px solid rgba(255,255,255,0.08)',
+            paddingTop: '20px',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            flexWrap: 'wrap', gap: '8px',
+          }}>
+            <p style={{
+              color: 'rgba(255,255,255,0.3)',
+              fontSize: '11px', fontFamily: 'sans-serif',
+              margin: 0,
+            }}>
+              © 2025 {settings.shop_name ||
+                'Ayyanar Book Centre'}. All rights reserved.
+            </p>
+            <p style={{
+              color: '#d4a853', fontSize: '11px',
+              fontStyle: 'italic', margin: 0,
+              opacity: 0.7,
+            }}>
+              "{settings.tagline ||
+                'Knowledge is the floor of success'}"
+            </p>
           </div>
-        </div>
-
-        <div className="border-t pt-4 text-center"
-          style={{ borderColor: '#2d5a3d' }}>
-          <p className="text-green-400 text-xs">
-            © 2025 {settings.shop_name || 'Ayyanar Book Centre'}.
-            All rights reserved.
-          </p>
-          <p className="text-green-500 text-xs mt-1 italic">
-            "{settings.tagline || 'Knowledge is the floor of success'}"
-          </p>
         </div>
       </footer>
+
+      <style>{`
+        @keyframes shimmer {
+          0% { background-position: -200% 0; }
+          100% { background-position: 200% 0; }
+        }
+      `}</style>
     </div>
   );
 };
