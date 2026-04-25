@@ -293,6 +293,7 @@ const Admin = () => {
   const [orders, setOrders] = useState<any[]>([]);
   const [payments, setPayments] = useState<any[]>([]);
   const [enquiries, setEnquiries] = useState<any[]>([]);
+  const [stats, setStats] = useState<any>(null);
   const [activeTab, setActiveTab] = useState('dashboard');
   const [filterType, setFilterType] = useState('all');
   const [paymentFilter, setPaymentFilter] = useState('all');
