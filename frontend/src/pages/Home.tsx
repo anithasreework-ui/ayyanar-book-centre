@@ -7,34 +7,48 @@ import axios from 'axios';
 const API = 'https://ayyanar-book-centre-1.onrender.com';
 
 const CATEGORIES = [
-  { label: 'State Board Textbooks', value: 'state_board',
-    bg: '#1a4a2e', abbr: 'SB' },
-  { label: 'TNPSC Competitive', value: 'tnpsc',
-    bg: '#1e3a5f', abbr: 'TN' },
-  { label: 'CBSE Textbooks', value: 'cbse',
-    bg: '#5a2d82', abbr: 'CB' },
-  { label: 'Central Competitive', value: 'central_competitive',
-    bg: '#7c2d12', abbr: 'CC' },
-  { label: 'NCERT / NEET', value: 'ncert',
-    bg: '#c2410c', abbr: 'NE' },
-  { label: 'Medical Books', value: 'medical',
-    bg: '#0e7490', abbr: 'MD' },
-  { label: 'Stationery', value: 'stationery',
-    bg: '#b45309', abbr: 'ST' },
-  { label: 'Children Books', value: 'children',
-    bg: '#be185d', abbr: 'CH' },
-  { label: 'Novels', value: 'novels',
-    bg: '#374151', abbr: 'NV' },
-  { label: 'Motivational', value: 'motivational',
-    bg: '#065f46', abbr: 'MO' },
-  { label: 'Gifts & Hampers', value: 'gifts',
-    bg: '#9d174d', abbr: 'GH' },
-  { label: 'School Projects', value: 'projects',
-    bg: '#1d4ed8', abbr: 'SP' },
-  { label: 'Combos', value: 'combos',
-    bg: '#6b21a8', abbr: 'CO' },
-  { label: 'Wholesale', value: 'wholesale',
-    bg: '#1a4a2e', abbr: 'WS' },
+  { label: 'State Board Textbooks',
+    value: 'state_board', bg: '#1a4a2e',
+    icon: '📗', desc: 'Class 1–12' },
+  { label: 'TNPSC Competitive',
+    value: 'tnpsc', bg: '#1e3a5f',
+    icon: '📋', desc: 'Group 1, 2, 4' },
+  { label: 'CBSE Textbooks',
+    value: 'cbse', bg: '#5a2d82',
+    icon: '📘', desc: 'All Classes' },
+  { label: 'Central Competitive',
+    value: 'central_competitive', bg: '#7c2d12',
+    icon: '🏆', desc: 'IAS, IPS, SSC' },
+  { label: 'NCERT / NEET',
+    value: 'ncert', bg: '#c2410c',
+    icon: '⚕️', desc: 'Medical Entrance' },
+  { label: 'Medical Books',
+    value: 'medical', bg: '#0e7490',
+    icon: '🩺', desc: 'MBBS, Nursing' },
+  { label: 'Stationery',
+    value: 'stationery', bg: '#b45309',
+    icon: '✒️', desc: 'Pens, Notebooks' },
+  { label: 'Children Books',
+    value: 'children', bg: '#be185d',
+    icon: '🌟', desc: 'Story, Activity' },
+  { label: 'Novels',
+    value: 'novels', bg: '#374151',
+    icon: '📖', desc: 'Tamil, English' },
+  { label: 'Motivational',
+    value: 'motivational', bg: '#065f46',
+    icon: '💡', desc: 'Self Help' },
+  { label: 'Gifts & Hampers',
+    value: 'gifts', bg: '#9d174d',
+    icon: '🎁', desc: 'For All Occasions' },
+  { label: 'School Projects',
+    value: 'projects', bg: '#1d4ed8',
+    icon: '🔭', desc: 'Science, Arts' },
+  { label: 'Combos',
+    value: 'combos', bg: '#6b21a8',
+    icon: '📦', desc: 'Best Value Sets' },
+  { label: 'Wholesale',
+    value: 'wholesale', bg: '#1a4a2e',
+    icon: '🏭', desc: 'Schools & Colleges' },
 ];
 
 const Home = () => {
@@ -302,56 +316,65 @@ const Home = () => {
                 style={{
                   background: '#ffffff',
                   border: '1px solid #e8e4df',
-                  borderRadius: '8px',
-                  padding: '16px 12px',
+                  borderRadius: '10px',
+                  padding: '16px 10px',
                   cursor: 'pointer',
                   display: 'flex',
                   flexDirection: 'column',
                   alignItems: 'center',
-                  gap: '10px',
+                  gap: '8px',
                   transition: 'all 0.2s',
                   boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
+                  position: 'relative',
+                  overflow: 'hidden',
                 }}
                 onMouseEnter={(e) => {
                   const el = e.currentTarget;
                   el.style.borderColor = cat.bg;
-                  el.style.transform = 'translateY(-2px)';
-                  el.style.boxShadow =
-                    `0 4px 12px rgba(0,0,0,0.1)`;
+                  el.style.transform = 'translateY(-3px)';
+                  el.style.boxShadow = `0 6px 16px rgba(0,0,0,0.12)`;
                 }}
                 onMouseLeave={(e) => {
                   const el = e.currentTarget;
                   el.style.borderColor = '#e8e4df';
                   el.style.transform = 'translateY(0)';
-                  el.style.boxShadow =
-                    '0 1px 3px rgba(0,0,0,0.04)';
+                  el.style.boxShadow = '0 1px 3px rgba(0,0,0,0.04)';
                 }}
               >
-                {/* Colored initial badge */}
+                {/* Color top stripe */}
                 <div style={{
-                  width: '40px', height: '40px',
-                  borderRadius: '8px',
-                  background: cat.bg,
+                  position: 'absolute', top: 0, left: 0, right: 0,
+                  height: '4px', background: cat.bg,
+                }} />
+
+                {/* Icon */}
+                <div style={{
+                  width: '48px', height: '48px',
+                  borderRadius: '12px',
+                  background: `${cat.bg}15`,
                   display: 'flex', alignItems: 'center',
                   justifyContent: 'center',
-                  color: '#fff',
-                  fontSize: '14px', fontWeight: '700',
-                  fontFamily: 'sans-serif',
-                  letterSpacing: '0.5px',
-                  flexShrink: 0,
+                  fontSize: '22px',
+                  marginTop: '8px',
                 }}>
-                  {cat.abbr}
+                  {cat.icon}
                 </div>
-                <span style={{
-                  fontSize: '11px',
-                  color: '#374151',
-                  textAlign: 'center',
-                  lineHeight: '1.3',
-                  fontFamily: 'sans-serif',
-                  fontWeight: '600',
-                }}>
-                  {cat.label}
-                </span>
+
+                <div style={{ textAlign: 'center' }}>
+                  <p style={{
+                    fontSize: '11px', color: '#1a1a1a',
+                    fontFamily: 'sans-serif', fontWeight: '700',
+                    margin: '0 0 2px', lineHeight: '1.3',
+                  }}>
+                    {cat.label}
+                  </p>
+                  <p style={{
+                    fontSize: '10px', color: '#9ca3af',
+                    fontFamily: 'sans-serif', margin: 0,
+                  }}>
+                    {cat.desc}
+                  </p>
+                </div>
               </button>
             ))}
           </div>

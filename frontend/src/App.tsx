@@ -14,6 +14,7 @@ import Terms from './pages/Terms';
 import Wholesale from './pages/Wholesale';
 import MyOrders from './pages/MyOrders';
 import Wishlist from './pages/Wishlist';
+import Profile from './pages/Profile';
 
 function App() {
   return (
@@ -31,6 +32,7 @@ function App() {
           <Route path="/orders" element={<OrderTracking />} />
           <Route path="/admin" element={<Admin />} />
           <Route path="/wholesale" element={<Wholesale />} />
+          <Route path="/profile" element={<Profile />} />
           <Route path="/terms" element={<Terms />} />
           <Route path="/my-orders" element={<MyOrders />} />
           <Route path="/wishlist" element={<Wishlist />} />

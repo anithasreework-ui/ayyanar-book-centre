@@ -149,13 +149,27 @@ const Navbar = () => {
             )}
 
             {token ? (
-              <div className="flex flex-col items-center ml-1 px-2">
-                <span className="text-xs text-green-300 truncate max-w-20">
-                  {user.name?.split(' ')[0]}
-                </span>
+              <div className="flex items-center gap-2 ml-1">
+                <button
+                  onClick={() => navigate('/profile')}
+                  className="flex flex-col items-center px-3 py-2
+                             rounded-lg transition-all hover:bg-green-800
+                             text-center min-w-14">
+                  <div style={{
+                    width: '24px', height: '24px', borderRadius: '50%',
+                    background: '#d4a853', display: 'flex',
+                    alignItems: 'center', justifyContent: 'center',
+                    color: '#1a4a2e', fontSize: '11px', fontWeight: '700',
+                  }}>
+                    {user.name?.charAt(0)?.toUpperCase() || 'U'}
+                  </div>
+                  <span className="text-xs mt-0.5 truncate max-w-16">
+                    {user.name?.split(' ')[0]}
+                  </span>
+                </button>
                 <button onClick={handleLogout}
                   className="text-xs bg-red-600 hover:bg-red-500
-                             px-2 py-1 rounded transition-colors mt-0.5">
+                             px-2 py-1 rounded transition-colors">
                   Logout
                 </button>
               </div>

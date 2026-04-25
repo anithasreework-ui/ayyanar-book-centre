@@ -288,11 +288,11 @@ const CategoryBulkDiscount = ({
 };
 
 const Admin = () => {
-  const [products, setProducts] = useState([]);
-  const [orders, setOrders] = useState([]);
-  const [payments, setPayments] = useState([]);
-  const [stats, setStats] = useState<any>(null);
-  const [enquiries, setEnquiries] = useState([]);
+  
+  const [products, setProducts] = useState<any[]>([]);
+  const [orders, setOrders] = useState<any[]>([]);
+  const [payments, setPayments] = useState<any[]>([]);
+  const [enquiries, setEnquiries] = useState<any[]>([]);
   const [activeTab, setActiveTab] = useState('dashboard');
   const [filterType, setFilterType] = useState('all');
   const [paymentFilter, setPaymentFilter] = useState('all');

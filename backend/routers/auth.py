@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
 from jose import jwt, JWTError
 from datetime import datetime, timedelta
@@ -220,3 +221,90 @@ def forgot_password(data: dict, db: Session = Depends(get_db)):
         "temp_password": temp_password,
         "note": "Use this to login. Change password after login."
     }
+
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
+
+
+def get_current_user(
+    token: str = Depends(oauth2_scheme),
+    db: Session = Depends(get_db)
+):
+    try:
+        payload = jwt.decode(
+            token, SECRET_KEY, algorithms=["HS256"]
+        )
+        user_id = int(payload.get("sub"))
+    except Exception:
+        raise HTTPException(
+            status_code=401, detail="Invalid token!"
+        )
+    user = db.query(models.User).filter(
+        models.User.id == user_id
+    ).first()
+    if not user:
+        raise HTTPException(
+            status_code=404, detail="User not found!"
+        )
+    return user
+
+
+@router.get("/profile")
+def get_profile(
+    current_user=Depends(get_current_user)
+):
+    return {
+        "id": current_user.id,
+        "name": current_user.name,
+        "email": current_user.email,
+        "phone": getattr(current_user, 'phone', ''),
+        "address": getattr(current_user, 'address', ''),
+        "role": current_user.role,
+    }
+
+
+@router.put("/profile")
+def update_profile(
+    data: dict,
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user)
+):
+    if data.get("name"):
+        current_user.name = data["name"]
+    if data.get("phone"):
+        current_user.phone = data.get("phone")
+    if hasattr(current_user, 'address'):
+        current_user.address = data.get("address", "")
+    db.commit()
+    return {"message": "Profile updated!"}
+
+
+@router.post("/change-password")
+def change_password(
+    data: dict,
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user)
+):
+    current_pwd = data.get("current_password", "")
+    new_pwd = data.get("new_password", "")
+
+    if not current_pwd or not new_pwd:
+        raise HTTPException(
+            status_code=400,
+            detail="Both passwords required!"
+        )
+    if len(new_pwd) < 6:
+        raise HTTPException(
+            status_code=400,
+            detail="Password must be at least 6 characters!"
+        )
+    if not verify_password(
+        current_pwd, current_user.password_hash
+    ):
+        raise HTTPException(
+            status_code=400,
+            detail="Current password is wrong!"
+        )
+
+    current_user.password_hash = hash_password(new_pwd)
+    db.commit()
+    return {"message": "Password changed successfully!"}
