@@ -123,31 +123,48 @@ const Login = () => {
               </button>
             </>
           ) : (
-            /* Reset Success */
             <div className="text-center">
-              <p className="text-5xl mb-4">✅</p>
+              <p className="text-5xl mb-4">
+                {forgotResult.status === 'email_sent' ? '📧' : '✅'}
+              </p>
               <h2 className="text-xl font-bold text-gray-800 mb-2">
-                Password Reset Done!
+                {forgotResult.status === 'email_sent'
+                  ? 'Check Your Email!'
+                  : 'Temporary Password Ready!'}
               </h2>
 
-              {forgotResult.temp_password && (
+              {forgotResult.status === 'email_sent' ? (
+                <div className="bg-blue-50 border border-blue-200
+                                rounded-xl p-4 mb-4">
+                  <p className="text-blue-800 text-sm">
+                    We sent a temporary password to
+                  </p>
+                  <p className="font-bold text-blue-900 mt-1">
+                    {forgotEmail}
+                  </p>
+                  <p className="text-blue-700 text-xs mt-2">
+                    Check your inbox and spam folder
+                  </p>
+                </div>
+              ) : (
+                // Fallback — email failed
                 <div className="bg-yellow-50 border-2 border-yellow-300
                                 rounded-xl p-4 mb-4">
                   <p className="text-sm text-gray-600 mb-1">
-                    Your temporary password:
+                    Email sending failed. Your temporary password:
                   </p>
                   <p className="text-2xl font-bold tracking-widest"
                     style={{ color: '#1a4a2e' }}>
                     {forgotResult.temp_password}
                   </p>
                   <p className="text-xs text-gray-500 mt-2">
-                    ⚠️ Save this password! Use it to login now.
+                    ⚠️ Save this! Use it to login.
                   </p>
                 </div>
               )}
 
               <p className="text-sm text-gray-500 mb-4">
-                {forgotResult.note}
+                After login → My Profile → Change Password
               </p>
 
               <button
@@ -155,14 +172,10 @@ const Login = () => {
                   setShowForgot(false);
                   setForgotResult(null);
                   setForgotEmail('');
-                  if (forgotResult.temp_password) {
-                    setPassword(forgotResult.temp_password);
-                    setEmail(forgotEmail);
-                  }
                 }}
                 className="w-full text-white py-3 rounded-lg font-bold"
                 style={{ background: '#1a4a2e' }}>
-                Login with Temp Password →
+                Back to Login
               </button>
             </div>
           )}

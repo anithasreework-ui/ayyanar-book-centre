@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 from jose import jwt, JWTError
 from datetime import datetime, timedelta
 from database import get_db
+from utils.email_sender import send_password_reset_email
 import models, os, bcrypt
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
@@ -203,24 +204,45 @@ def forgot_password(data: dict, db: Session = Depends(get_db)):
         models.User.email == email
     ).first()
 
+    # Security — always return success
     if not user:
         return {
-            "message": "If email exists, reset link sent!",
+            "message": "If this email is registered, "
+                       "you will receive reset instructions.",
             "status": "sent"
         }
 
+    # Generate temp password
     import random, string
-    temp_password = "Reset@" + "".join(
-        random.choices(string.digits, k=6)
+    temp_password = "Temp@" + "".join(
+        random.choices(string.digits + string.ascii_uppercase, k=6)
     )
+
+    # Update DB
     user.password_hash = hash_password(temp_password)
     db.commit()
 
-    return {
-        "message": "Password reset successful!",
-        "temp_password": temp_password,
-        "note": "Use this to login. Change password after login."
-    }
+    # Send email
+    email_sent = send_password_reset_email(
+        to_email=email,
+        name=user.name,
+        temp_password=temp_password
+    )
+
+    if email_sent:
+        return {
+            "message": "Password reset email sent! "
+                       "Check your inbox.",
+            "status": "email_sent"
+        }
+    else:
+        # Email fail ஆனா — website-ல காட்டு (fallback)
+        return {
+            "message": "Email sending failed. "
+                       "Here is your temporary password:",
+            "temp_password": temp_password,
+            "status": "fallback"
+        }
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
 
