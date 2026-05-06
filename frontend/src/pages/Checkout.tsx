@@ -32,6 +32,24 @@ const Checkout = () => {
     }
     setCartItems(JSON.parse(stored));
 
+    // Auto-fill from profile
+    const token = localStorage.getItem('token');
+    if (token) {
+      axios.get(`${API}/auth/profile`, {
+        headers: { Authorization: `Bearer ${token}` }
+      }).then((res) => {
+        setForm(prev => ({
+          ...prev,
+          phone: res.data.phone || '',
+          address: res.data.address || '',
+          pincode: res.data.pincode || '',
+          email: '',
+          country_code: '+91',
+          alt_phone: '',
+        }));
+      }).catch(() => {});
+    }
+
     // Store pickup → always UPI
     if (deliveryType === 'store_pickup') {
       setSelectedPayment('upi');

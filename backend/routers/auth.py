@@ -272,14 +272,17 @@ def get_current_user(
 
 @router.get("/profile")
 def get_profile(
+    db: Session = Depends(get_db),
     current_user=Depends(get_current_user)
 ):
     return {
         "id": current_user.id,
         "name": current_user.name,
         "email": current_user.email,
-        "phone": getattr(current_user, 'phone', ''),
-        "address": getattr(current_user, 'address', ''),
+        "phone": getattr(current_user, 'phone', '') or '',
+        "address": getattr(current_user, 'address', '') or '',
+        "pincode": getattr(current_user, 'pincode', '') or '',
+        "city": getattr(current_user, 'city', '') or '',
         "role": current_user.role,
     }
 
@@ -292,12 +295,22 @@ def update_profile(
 ):
     if data.get("name"):
         current_user.name = data["name"]
-    if data.get("phone"):
-        current_user.phone = data.get("phone")
-    if hasattr(current_user, 'address'):
-        current_user.address = data.get("address", "")
+    if "phone" in data:
+        current_user.phone = data["phone"]
+    if "address" in data:
+        current_user.address = data["address"]
+    if "pincode" in data:
+        current_user.pincode = data["pincode"]
+    if "city" in data:
+        current_user.city = data["city"]
     db.commit()
-    return {"message": "Profile updated!"}
+
+    # Update localStorage user info
+    return {
+        "message": "Profile updated!",
+        "name": current_user.name,
+        "phone": current_user.phone,
+    }
 
 
 @router.post("/change-password")
@@ -317,11 +330,10 @@ def change_password(
     if len(new_pwd) < 6:
         raise HTTPException(
             status_code=400,
-            detail="Password must be at least 6 characters!"
+            detail="Minimum 6 characters!"
         )
-    if not verify_password(
-        current_pwd, current_user.password_hash
-    ):
+    if not verify_password(current_pwd,
+                           current_user.password_hash):
         raise HTTPException(
             status_code=400,
             detail="Current password is wrong!"

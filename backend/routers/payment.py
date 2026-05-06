@@ -12,10 +12,11 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
 RAZORPAY_KEY_ID = os.getenv("RAZORPAY_KEY_ID", "")
 RAZORPAY_KEY_SECRET = os.getenv("RAZORPAY_KEY_SECRET", "")
 
-# Razorpay client
-rzp_client = razorpay.Client(
-    auth=(RAZORPAY_KEY_ID, RAZORPAY_KEY_SECRET)
-)
+# Razorpay client helper
+def get_razorpay_client():
+    key = os.getenv("RAZORPAY_KEY_ID", "")
+    secret = os.getenv("RAZORPAY_KEY_SECRET", "")
+    return razorpay.Client(auth=(key, secret))
 
 
 def get_current_user(
@@ -52,9 +53,11 @@ def create_razorpay_order(
         )
 
     try:
-        # Razorpay order create (amount in paise — Rs.1 = 100 paise)
-        rzp_order = rzp_client.order.create({
-            "amount": int(amount * 100),
+        # இப்போ create பண்றோம்
+        rzp = get_razorpay_client()
+        
+        rzp_order = rzp.order.create({
+            "amount": int(float(amount) * 100),
             "currency": "INR",
             "receipt": f"order_{order_id}",
             "notes": {
@@ -63,11 +66,13 @@ def create_razorpay_order(
             }
         })
 
+        key_id = os.getenv("RAZORPAY_KEY_ID", "")
+        
         return {
             "razorpay_order_id": rzp_order["id"],
             "amount": amount,
             "currency": "INR",
-            "key_id": RAZORPAY_KEY_ID
+            "key_id": key_id
         }
 
     except Exception as e:
