@@ -132,7 +132,7 @@ const Home = () => {
                 <span style={{ color: '#d4a853', fontSize: '11px',
                   letterSpacing: '3px', fontFamily: 'sans-serif',
                   textTransform: 'uppercase' }}>
-                  Est. Dindigul, Tamil Nadu
+                  Est. 1985 . Dindigul, Tamil Nadu
                 </span>
               </div>
 

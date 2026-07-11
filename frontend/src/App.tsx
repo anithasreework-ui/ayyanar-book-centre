@@ -15,6 +15,7 @@ import Wholesale from './pages/Wholesale';
 import MyOrders from './pages/MyOrders';
 import Wishlist from './pages/Wishlist';
 import Profile from './pages/Profile';
+import ResetPassword from './pages/ResetPassword';
 
 function App() {
   return (
@@ -36,6 +37,8 @@ function App() {
           <Route path="/terms" element={<Terms />} />
           <Route path="/my-orders" element={<MyOrders />} />
           <Route path="/wishlist" element={<Wishlist />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
+          
         </Routes>
         <ChatBot />
       </div>

@@ -11,6 +11,12 @@ const Checkout = () => {
   const [step, setStep] = useState(1);
   const [selectedPayment, setSelectedPayment] = useState('cod');
   const [form, setForm] = useState({
+    full_name: '',
+    door_number: '',
+    street: '',
+    area: '',
+    city: '',
+    state: '',
     address: '',
     pincode: '',
     phone: '',
@@ -110,6 +116,17 @@ const Checkout = () => {
     setLoading(true);
 
     try {
+      // Build full address from form fields
+      const fullAddress = [
+        form.door_number,
+        form.street,
+        form.area,
+        form.city,
+        form.state,
+        form.pincode,
+        country,
+      ].filter(Boolean).join(', ');
+
       // Step 1: Create order in DB
       const orderRes = await axios.post(
         `${API}/orders/`,
@@ -119,7 +136,7 @@ const Checkout = () => {
             quantity: i.quantity,
           })),
           delivery_type: deliveryType,
-          delivery_address: form.address,
+          delivery_address: fullAddress,
           phone: form.phone,
           alt_phone: form.alt_phone,
           pincode: form.pincode,
@@ -834,138 +851,240 @@ const Checkout = () => {
           {/* Home Delivery Form */}
           {deliveryType === 'home_delivery' && (
             <div className="bg-white rounded-2xl border border-gray-100
-                            shadow-sm p-5 space-y-3">
-              <h2 className="font-bold text-gray-800">
-                Delivery Details
-              </h2>
+                    shadow-sm p-5 space-y-4">
+      <h2 className="font-bold text-gray-800 text-lg">
+        Delivery Address
+      </h2>
 
-              {/* Country */}
-              <div>
-                <label className="text-sm font-medium text-gray-700">
-                  Country *
-                </label>
-                <select
-                  value={country}
-                  onChange={(e) => setCountry(e.target.value)}
-                  className="w-full border rounded-lg px-3 py-2 mt-1
-                             text-sm focus:outline-none focus:border-green-500">
-                  <option value="India">🇮🇳 India</option>
-                  <option value="USA">🇺🇸 USA</option>
-                  <option value="UK">🇬🇧 UK</option>
-                  <option value="Canada">🇨🇦 Canada</option>
-                  <option value="Australia">🇦🇺 Australia</option>
-                  <option value="UAE">🇦🇪 UAE</option>
-                  <option value="Singapore">🇸🇬 Singapore</option>
-                  <option value="Malaysia">🇲🇾 Malaysia</option>
-                  <option value="Other">🌍 Other</option>
-                </select>
-              </div>
+      {/* Full Name */}
+      <div>
+        <label className="text-xs font-700 text-gray-500
+                           uppercase tracking-wide block mb-1">
+          Full Name *
+        </label>
+        <input type="text"
+          value={form.full_name || ''}
+          onChange={(e) => setForm({
+            ...form, full_name: e.target.value
+          })}
+          placeholder="Enter your full name"
+          className="w-full border border-gray-200 rounded-lg
+                     px-4 py-2.5 text-sm focus:outline-none
+                     focus:border-green-500"
+        />
+      </div>
 
-              {/* Phone */}
-              <div className="grid grid-cols-3 gap-2">
-                <div>
-                  <label className="text-sm font-medium text-gray-700">
-                    Code *
-                  </label>
-                  <input
-                    type="text"
-                    value={form.country_code}
-                    onChange={(e) =>
-                      setForm({ ...form, country_code: e.target.value })
-                    }
-                    placeholder="+91"
-                    className="w-full border rounded-lg px-3 py-2 mt-1
-                               text-sm focus:outline-none"
-                  />
-                </div>
-                <div className="col-span-2">
-                  <label className="text-sm font-medium text-gray-700">
-                    Phone *
-                  </label>
-                  <input
-                    type="tel"
-                    value={form.phone}
-                    onChange={(e) =>
-                      setForm({ ...form, phone: e.target.value })
-                    }
-                    placeholder="Phone number"
-                    className="w-full border rounded-lg px-3 py-2 mt-1
-                               text-sm focus:outline-none"
-                  />
-                </div>
-              </div>
+      {/* Phone */}
+      <div className="grid grid-cols-3 gap-2">
+        <div>
+          <label className="text-xs font-700 text-gray-500
+                             uppercase tracking-wide block mb-1">
+            Country Code *
+          </label>
+          <select
+            value={form.country_code}
+            onChange={(e) => setForm({
+              ...form, country_code: e.target.value
+            })}
+            className="w-full border border-gray-200 rounded-lg
+                       px-2 py-2.5 text-sm focus:outline-none
+                       focus:border-green-500">
+            <option value="+91">🇮🇳 +91</option>
+            <option value="+1">🇺🇸 +1</option>
+            <option value="+44">🇬🇧 +44</option>
+            <option value="+61">🇦🇺 +61</option>
+            <option value="+971">🇦🇪 +971</option>
+            <option value="+65">🇸🇬 +65</option>
+            <option value="+60">🇲🇾 +60</option>
+            <option value="+94">🇱🇰 +94</option>
+            <option value="+966">🇸🇦 +966</option>
+            <option value="+974">🇶🇦 +974</option>
+            <option value="+49">🇩🇪 +49</option>
+            <option value="+33">🇫🇷 +33</option>
+          </select>
+        </div>
+        <div className="col-span-2">
+          <label className="text-xs font-700 text-gray-500
+                             uppercase tracking-wide block mb-1">
+            Phone Number *
+          </label>
+          <input type="tel"
+            value={form.phone}
+            onChange={(e) => setForm({
+              ...form, phone: e.target.value
+            })}
+            placeholder="Phone number"
+            className="w-full border border-gray-200 rounded-lg
+                       px-4 py-2.5 text-sm focus:outline-none
+                       focus:border-green-500"
+          />
+        </div>
+      </div>
 
-              {/* Alt Phone */}
-              <div>
-                <label className="text-sm font-medium text-gray-700">
-                  Alternate Phone (Optional)
-                </label>
-                <input
-                  type="tel"
-                  value={form.alt_phone}
-                  onChange={(e) =>
-                    setForm({ ...form, alt_phone: e.target.value })
-                  }
-                  placeholder="Alternative contact"
-                  className="w-full border rounded-lg px-3 py-2 mt-1
-                             text-sm focus:outline-none"
-                />
-              </div>
+      {/* Door Number + Street */}
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <label className="text-xs font-700 text-gray-500
+                             uppercase tracking-wide block mb-1">
+            Door / Flat Number *
+          </label>
+          <input type="text"
+            value={form.door_number || ''}
+            onChange={(e) => setForm({
+              ...form, door_number: e.target.value
+            })}
+            placeholder="e.g. 14A, Flat 3B"
+            className="w-full border border-gray-200 rounded-lg
+                       px-4 py-2.5 text-sm focus:outline-none
+                       focus:border-green-500"
+          />
+        </div>
+        <div>
+          <label className="text-xs font-700 text-gray-500
+                             uppercase tracking-wide block mb-1">
+            Street / Road Name *
+          </label>
+          <input type="text"
+            value={form.street || ''}
+            onChange={(e) => setForm({
+              ...form, street: e.target.value
+            })}
+            placeholder="e.g. AMC Road"
+            className="w-full border border-gray-200 rounded-lg
+                       px-4 py-2.5 text-sm focus:outline-none
+                       focus:border-green-500"
+          />
+        </div>
+      </div>
 
-              {/* Email — International */}
-              {country !== 'India' && (
-                <div>
-                  <label className="text-sm font-medium text-gray-700">
-                    Email * (International orders)
-                  </label>
-                  <input
-                    type="email"
-                    value={form.email}
-                    onChange={(e) =>
-                      setForm({ ...form, email: e.target.value })
-                    }
-                    placeholder="your@email.com"
-                    className="w-full border rounded-lg px-3 py-2 mt-1
-                               text-sm focus:outline-none"
-                  />
-                </div>
-              )}
+      {/* Area / Locality */}
+      <div>
+        <label className="text-xs font-700 text-gray-500
+                           uppercase tracking-wide block mb-1">
+          Area / Locality / Nearest Landmark *
+        </label>
+        <input type="text"
+          value={form.area || ''}
+          onChange={(e) => setForm({
+            ...form, area: e.target.value
+          })}
+          placeholder="e.g. Near Bus Stand, Gandhi Nagar"
+          className="w-full border border-gray-200 rounded-lg
+                     px-4 py-2.5 text-sm focus:outline-none
+                     focus:border-green-500"
+        />
+      </div>
 
-              {/* Address */}
-              <div>
-                <label className="text-sm font-medium text-gray-700">
-                  Full Delivery Address *
-                </label>
-                <textarea
-                  value={form.address}
-                  onChange={(e) =>
-                    setForm({ ...form, address: e.target.value })
-                  }
-                  placeholder="Door no, Street, Area, City, State..."
-                  rows={3}
-                  className="w-full border rounded-lg px-3 py-2 mt-1
-                             text-sm focus:outline-none resize-none"
-                />
-              </div>
+      {/* City + State */}
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <label className="text-xs font-700 text-gray-500
+                             uppercase tracking-wide block mb-1">
+            City / Town *
+          </label>
+          <input type="text"
+            value={form.city || ''}
+            onChange={(e) => setForm({
+              ...form, city: e.target.value
+            })}
+            placeholder="e.g. Dindigul"
+            className="w-full border border-gray-200 rounded-lg
+                       px-4 py-2.5 text-sm focus:outline-none
+                       focus:border-green-500"
+          />
+        </div>
+        <div>
+          <label className="text-xs font-700 text-gray-500
+                             uppercase tracking-wide block mb-1">
+            State / Province *
+          </label>
+          <input type="text"
+            value={form.state || ''}
+            onChange={(e) => setForm({
+              ...form, state: e.target.value
+            })}
+            placeholder="e.g. Tamil Nadu"
+            className="w-full border border-gray-200 rounded-lg
+                       px-4 py-2.5 text-sm focus:outline-none
+                       focus:border-green-500"
+          />
+        </div>
+      </div>
 
-              {/* Pincode */}
-              <div>
-                <label className="text-sm font-medium text-gray-700">
-                  Pincode *
-                </label>
-                <input
-                  type="text"
-                  value={form.pincode}
-                  onChange={(e) =>
-                    setForm({ ...form, pincode: e.target.value })
-                  }
-                  placeholder="6-digit pincode"
-                  maxLength={6}
-                  className="w-full border rounded-lg px-3 py-2 mt-1
-                             text-sm focus:outline-none"
-                />
-              </div>
-            </div>
+      {/* Pincode + Country */}
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <label className="text-xs font-700 text-gray-500
+                             uppercase tracking-wide block mb-1">
+            Pincode / ZIP Code *
+          </label>
+          <input type="text"
+            value={form.pincode}
+            onChange={(e) => setForm({
+              ...form, pincode: e.target.value
+            })}
+            placeholder="e.g. 624001"
+            maxLength={10}
+            className="w-full border border-gray-200 rounded-lg
+                       px-4 py-2.5 text-sm focus:outline-none
+                       focus:border-green-500"
+          />
+        </div>
+        <div>
+          <label className="text-xs font-700 text-gray-500
+                             uppercase tracking-wide block mb-1">
+            Country *
+          </label>
+          <select
+            value={country}
+            onChange={(e) => setCountry(e.target.value)}
+            className="w-full border border-gray-200 rounded-lg
+                       px-4 py-2.5 text-sm focus:outline-none
+                       focus:border-green-500">
+            <option value="India">🇮🇳 India</option>
+            <option value="USA">🇺🇸 United States</option>
+            <option value="UK">🇬🇧 United Kingdom</option>
+            <option value="Canada">🇨🇦 Canada</option>
+            <option value="Australia">🇦🇺 Australia</option>
+            <option value="UAE">🇦🇪 UAE</option>
+            <option value="Singapore">🇸🇬 Singapore</option>
+            <option value="Malaysia">🇲🇾 Malaysia</option>
+            <option value="Sri Lanka">🇱🇰 Sri Lanka</option>
+            <option value="Saudi Arabia">🇸🇦 Saudi Arabia</option>
+            <option value="Qatar">🇶🇦 Qatar</option>
+            <option value="Kuwait">🇰🇼 Kuwait</option>
+            <option value="Germany">🇩🇪 Germany</option>
+            <option value="France">🇫🇷 France</option>
+            <option value="Other">🌍 Other Country</option>
+          </select>
+        </div>
+      </div>
+
+      {/* Alt Phone */}
+      <div>
+        <label className="text-xs font-700 text-gray-500
+                           uppercase tracking-wide block mb-1">
+          Alternate Phone (Optional)
+        </label>
+        <input type="tel"
+          value={form.alt_phone}
+          onChange={(e) => setForm({
+            ...form, alt_phone: e.target.value
+          })}
+          placeholder="Alternative contact number"
+          className="w-full border border-gray-200 rounded-lg
+                     px-4 py-2.5 text-sm focus:outline-none
+                     focus:border-green-500"
+        />
+      </div>
+
+      {/* Delivery Note */}
+      <div className="bg-blue-50 rounded-xl p-3 text-xs
+                      text-blue-700">
+        📦 Please ensure someone is available to receive
+        the package at this address.
+      </div>
+    </div>
           )}
 
           {/* Delivery Charges Info */}

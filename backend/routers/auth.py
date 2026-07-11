@@ -4,8 +4,8 @@ from sqlalchemy.orm import Session
 from jose import jwt, JWTError
 from datetime import datetime, timedelta
 from database import get_db
-from utils.email_sender import send_password_reset_email
-import models, os, bcrypt
+from utils.email_sender import send_reset_email, send_reset_link
+import models, os, bcrypt, secrets
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 SECRET_KEY = os.getenv("SECRET_KEY", "ayyanar2024secretkey")
@@ -192,8 +192,12 @@ def refresh_token(data: dict, db: Session = Depends(get_db)):
 
 
 @router.post("/forgot-password")
-def forgot_password(data: dict, db: Session = Depends(get_db)):
+def forgot_password(
+    data: dict,
+    db: Session = Depends(get_db)
+):
     email = data.get("email", "").strip().lower()
+
     if not email:
         raise HTTPException(
             status_code=400,
@@ -204,45 +208,154 @@ def forgot_password(data: dict, db: Session = Depends(get_db)):
         models.User.email == email
     ).first()
 
-    # Security — always return success
+    # Always return success — security best practice
+    # (Don't reveal if email exists)
     if not user:
         return {
             "message": "If this email is registered, "
-                       "you will receive reset instructions.",
+                       "a reset link has been sent.",
             "status": "sent"
         }
 
-    # Generate temp password
-    import random, string
-    temp_password = "Temp@" + "".join(
-        random.choices(string.digits + string.ascii_uppercase, k=6)
+    # Delete old unused tokens for this user
+    db.query(models.PasswordResetToken).filter(
+        models.PasswordResetToken.user_id == user.id,
+        models.PasswordResetToken.used == False
+    ).delete()
+
+    # Generate secure token
+    token = secrets.token_urlsafe(32)
+    expires_at = (
+        datetime.utcnow() +
+        timedelta(hours=1)
     )
 
-    # Update DB
-    user.password_hash = hash_password(temp_password)
+    # Save token to DB
+    reset_token = models.PasswordResetToken(
+        user_id=user.id,
+        token=token,
+        expires_at=expires_at,
+        used=False
+    )
+    db.add(reset_token)
     db.commit()
 
     # Send email
-    email_sent = send_password_reset_email(
+    sent = send_reset_link(
         to_email=email,
         name=user.name,
-        temp_password=temp_password
+        reset_token=token
     )
 
-    if email_sent:
-        return {
-            "message": "Password reset email sent! "
-                       "Check your inbox.",
-            "status": "email_sent"
-        }
-    else:
-        # Email fail ஆனா — website-ல காட்டு (fallback)
-        return {
-            "message": "Email sending failed. "
-                       "Here is your temporary password:",
-            "temp_password": temp_password,
-            "status": "fallback"
-        }
+    return {
+        "message": "Password reset link sent to your email!",
+        "status": "sent",
+        "email_sent": sent
+    }
+
+
+# STEP 2: Token valid-ஆ இருக்கா check பண்ணு
+@router.get("/verify-reset-token/{token}")
+def verify_reset_token(
+    token: str,
+    db: Session = Depends(get_db)
+):
+    reset = db.query(models.PasswordResetToken).filter(
+        models.PasswordResetToken.token == token,
+        models.PasswordResetToken.used == False
+    ).first()
+
+    if not reset:
+        raise HTTPException(
+            status_code=400,
+            detail="Invalid or expired reset link!"
+        )
+
+    # Check expiry
+    if datetime.utcnow() > reset.expires_at:
+        raise HTTPException(
+            status_code=400,
+            detail="Reset link has expired! "
+                   "Please request a new one."
+        )
+
+    return {
+        "valid": True,
+        "message": "Token is valid"
+    }
+
+
+# STEP 3: New password set பண்ணுவான்
+@router.post("/reset-password")
+def reset_password(
+    data: dict,
+    db: Session = Depends(get_db)
+):
+    token = data.get("token", "")
+    new_password = data.get("new_password", "")
+    confirm_password = data.get("confirm_password", "")
+
+    if not token or not new_password:
+        raise HTTPException(
+            status_code=400,
+            detail="Token and new password are required!"
+        )
+
+    if new_password != confirm_password:
+        raise HTTPException(
+            status_code=400,
+            detail="Passwords do not match!"
+        )
+
+    if len(new_password) < 8:
+        raise HTTPException(
+            status_code=400,
+            detail="Password must be at least 8 characters!"
+        )
+
+    # Find token
+    reset = db.query(models.PasswordResetToken).filter(
+        models.PasswordResetToken.token == token,
+        models.PasswordResetToken.used == False
+    ).first()
+
+    if not reset:
+        raise HTTPException(
+            status_code=400,
+            detail="Invalid or already used reset link!"
+        )
+
+    # Check expiry
+    if datetime.utcnow() > reset.expires_at:
+        raise HTTPException(
+            status_code=400,
+            detail="Reset link expired! Request a new one."
+        )
+
+    # Find user
+    user = db.query(models.User).filter(
+        models.User.id == reset.user_id
+    ).first()
+
+    if not user:
+        raise HTTPException(
+            status_code=404,
+            detail="User not found!"
+        )
+
+    # Update password
+    user.password_hash = hash_password(new_password)
+
+    # Mark token as used
+    reset.used = True
+
+    db.commit()
+
+    return {
+        "message": "Password reset successful! "
+                   "Please login with your new password.",
+        "status": "success"
+    }
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
 

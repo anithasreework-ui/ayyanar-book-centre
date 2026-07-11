@@ -10,7 +10,10 @@ class User(Base):
     name = Column(String(100), nullable=False)
     email = Column(String(100), unique=True, nullable=False)
     password_hash = Column(String(255), nullable=False)
-    phone = Column(String(15))
+    phone = Column(String(20),nullable=True)
+    address = Column(Text, nullable=True)
+    pincode = Column(String(10), nullable=True)
+    city = Column(String(100), nullable=True)
     role = Column(String(20), default='customer')
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
     orders = relationship("Order", back_populates="user")
@@ -77,3 +80,16 @@ class WholesaleEnquiry(Base):
     phone = Column(String(15), nullable=False)
     message = Column(Text)
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
+
+
+class PasswordResetToken(Base):
+    __tablename__ = "password_reset_tokens"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, nullable=False)
+    token = Column(String(200), unique=True, nullable=False)
+    expires_at = Column(DateTime, nullable=False)
+    used = Column(Boolean, default=False)
+    created_at = Column(
+        DateTime, default=datetime.datetime.utcnow
+    )
