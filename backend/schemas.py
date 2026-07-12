@@ -28,11 +28,12 @@ class ProductCreate(BaseModel):
     name: str
     description: Optional[str] = None
     price: float
+    mrp: Optional[float] = None
     category: str
     subcategory: Optional[str] = None
     stock_qty: int
     image_url: Optional[str] = None
-    mrp: Optional[float] = None
+    
 
 
 class ProductResponse(BaseModel):

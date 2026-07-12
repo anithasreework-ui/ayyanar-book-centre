@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 from jose import jwt, JWTError
 from datetime import datetime, timedelta
 from database import get_db
-from utils.email_sender import send_reset_email, send_reset_link
+from utils.email_sender import  send_reset_link
 import models, os, bcrypt, secrets
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])

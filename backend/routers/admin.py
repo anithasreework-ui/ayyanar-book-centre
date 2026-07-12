@@ -82,6 +82,7 @@ def add_product(
         name=product.name,
         description=product.description,
         price=product.price,
+        mrp=product.mrp,
         category=product.category,
         subcategory=product.subcategory,
         stock_qty=product.stock_qty,
