@@ -4,6 +4,29 @@ import axios from 'axios';
 
 const API = 'https://ayyanar-book-centre-1.onrender.com';
 
+const COUNTRIES = [
+  { name: 'India', flag: '🇮🇳', code: '+91', value: 'India' },
+  { name: 'USA', flag: '🇺🇸', code: '+1', value: 'USA' },
+  { name: 'UK', flag: '🇬🇧', code: '+44', value: 'UK' },
+  { name: 'Canada', flag: '🇨🇦', code: '+1', value: 'Canada' },
+  { name: 'Australia', flag: '🇦🇺', code: '+61', value: 'Australia' },
+  { name: 'UAE', flag: '🇦🇪', code: '+971', value: 'UAE' },
+  { name: 'Singapore', flag: '🇸🇬', code: '+65', value: 'Singapore' },
+  { name: 'Malaysia', flag: '🇲🇾', code: '+60', value: 'Malaysia' },
+  { name: 'Sri Lanka', flag: '🇱🇰', code: '+94', value: 'Sri Lanka' },
+  { name: 'Saudi Arabia', flag: '🇸🇦', code: '+966', value: 'Saudi Arabia' },
+  { name: 'Qatar', flag: '🇶🇦', code: '+974', value: 'Qatar' },
+  { name: 'Kuwait', flag: '🇰🇼', code: '+965', value: 'Kuwait' },
+  { name: 'Bahrain', flag: '🇧🇭', code: '+973', value: 'Bahrain' },
+  { name: 'Oman', flag: '🇴🇲', code: '+968', value: 'Oman' },
+  { name: 'Germany', flag: '🇩🇪', code: '+49', value: 'Germany' },
+  { name: 'France', flag: '🇫🇷', code: '+33', value: 'France' },
+  { name: 'Japan', flag: '🇯🇵', code: '+81', value: 'Japan' },
+  { name: 'New Zealand', flag: '🇳🇿', code: '+64', value: 'New Zealand' },
+  { name: 'South Africa', flag: '🇿🇦', code: '+27', value: 'South Africa' },
+  { name: 'Other', flag: '🌍', code: '+', value: 'Other' },
+];
+
 const Checkout = () => {
   const [cartItems, setCartItems] = useState<any[]>([]);
   const [deliveryType, setDeliveryType] = useState('home_delivery');
@@ -874,41 +897,60 @@ const Checkout = () => {
         />
       </div>
 
-      {/* Phone */}
-      <div className="grid grid-cols-3 gap-2">
+      {/* Country Select */}
+      <div>
+        <label className="text-xs font-bold text-gray-500
+                           uppercase tracking-wide block mb-1">
+          Country *
+        </label>
+        <select
+          value={country}
+          onChange={(e) => {
+            const selected = COUNTRIES.find(
+              c => c.value === e.target.value
+            );
+            setCountry(e.target.value);
+            if (selected) {
+              setForm({
+                ...form,
+                country_code: selected.code
+              });
+            }
+          }}
+          className="w-full border border-gray-200 rounded-lg
+                     px-4 py-2.5 text-sm focus:outline-none
+                     focus:border-green-500">
+          {COUNTRIES.map((c) => (
+            <option key={c.value} value={c.value}>
+              {c.flag} {c.name} ({c.code})
+            </option>
+          ))}
+        </select>
+      </div>
+
+      {/* Phone with auto country code */}
+      <div className="grid grid-cols-3 gap-2 mt-3">
         <div>
-          <label className="text-xs font-700 text-gray-500
+          <label className="text-xs font-bold text-gray-500
                              uppercase tracking-wide block mb-1">
-            Country Code *
+            Code
           </label>
-          <select
+          <input
+            type="text"
             value={form.country_code}
-            onChange={(e) => setForm({
-              ...form, country_code: e.target.value
-            })}
-            className="w-full border border-gray-200 rounded-lg
-                       px-2 py-2.5 text-sm focus:outline-none
-                       focus:border-green-500">
-            <option value="+91">🇮🇳 +91</option>
-            <option value="+1">🇺🇸 +1</option>
-            <option value="+44">🇬🇧 +44</option>
-            <option value="+61">🇦🇺 +61</option>
-            <option value="+971">🇦🇪 +971</option>
-            <option value="+65">🇸🇬 +65</option>
-            <option value="+60">🇲🇾 +60</option>
-            <option value="+94">🇱🇰 +94</option>
-            <option value="+966">🇸🇦 +966</option>
-            <option value="+974">🇶🇦 +974</option>
-            <option value="+49">🇩🇪 +49</option>
-            <option value="+33">🇫🇷 +33</option>
-          </select>
+            readOnly
+            className="w-full border border-gray-100 rounded-lg
+                       px-3 py-2.5 text-sm bg-gray-50
+                       text-gray-600 cursor-not-allowed"
+          />
         </div>
         <div className="col-span-2">
-          <label className="text-xs font-700 text-gray-500
+          <label className="text-xs font-bold text-gray-500
                              uppercase tracking-wide block mb-1">
             Phone Number *
           </label>
-          <input type="tel"
+          <input
+            type="tel"
             value={form.phone}
             onChange={(e) => setForm({
               ...form, phone: e.target.value
@@ -1011,53 +1053,23 @@ const Checkout = () => {
         </div>
       </div>
 
-      {/* Pincode + Country */}
-      <div className="grid grid-cols-2 gap-3">
-        <div>
-          <label className="text-xs font-700 text-gray-500
-                             uppercase tracking-wide block mb-1">
-            Pincode / ZIP Code *
-          </label>
-          <input type="text"
-            value={form.pincode}
-            onChange={(e) => setForm({
-              ...form, pincode: e.target.value
-            })}
-            placeholder="e.g. 624001"
-            maxLength={10}
-            className="w-full border border-gray-200 rounded-lg
-                       px-4 py-2.5 text-sm focus:outline-none
-                       focus:border-green-500"
-          />
-        </div>
-        <div>
-          <label className="text-xs font-700 text-gray-500
-                             uppercase tracking-wide block mb-1">
-            Country *
-          </label>
-          <select
-            value={country}
-            onChange={(e) => setCountry(e.target.value)}
-            className="w-full border border-gray-200 rounded-lg
-                       px-4 py-2.5 text-sm focus:outline-none
-                       focus:border-green-500">
-            <option value="India">🇮🇳 India</option>
-            <option value="USA">🇺🇸 United States</option>
-            <option value="UK">🇬🇧 United Kingdom</option>
-            <option value="Canada">🇨🇦 Canada</option>
-            <option value="Australia">🇦🇺 Australia</option>
-            <option value="UAE">🇦🇪 UAE</option>
-            <option value="Singapore">🇸🇬 Singapore</option>
-            <option value="Malaysia">🇲🇾 Malaysia</option>
-            <option value="Sri Lanka">🇱🇰 Sri Lanka</option>
-            <option value="Saudi Arabia">🇸🇦 Saudi Arabia</option>
-            <option value="Qatar">🇶🇦 Qatar</option>
-            <option value="Kuwait">🇰🇼 Kuwait</option>
-            <option value="Germany">🇩🇪 Germany</option>
-            <option value="France">🇫🇷 France</option>
-            <option value="Other">🌍 Other Country</option>
-          </select>
-        </div>
+      {/* Pincode */}
+      <div>
+        <label className="text-xs font-700 text-gray-500
+                           uppercase tracking-wide block mb-1">
+          Pincode / ZIP Code *
+        </label>
+        <input type="text"
+          value={form.pincode}
+          onChange={(e) => setForm({
+            ...form, pincode: e.target.value
+          })}
+          placeholder="e.g. 624001"
+          maxLength={10}
+          className="w-full border border-gray-200 rounded-lg
+                     px-4 py-2.5 text-sm focus:outline-none
+                     focus:border-green-500"
+        />
       </div>
 
       {/* Alt Phone */}
@@ -1153,6 +1165,37 @@ const Checkout = () => {
                 <span>Rs.{subtotal.toFixed(2)}</span>
               </div>
             </div>
+
+            {/* Delivery Notice for specific categories */}
+            {cartItems.some((item: any) =>
+              ['state_board', 'ncert', 'cbse',
+               'tnpsc'].includes(item.category)
+            ) && (
+              <div style={{
+                background: '#fef3c7',
+                border: '1px solid #f59e0b',
+                borderRadius: '10px',
+                padding: '12px 14px',
+                marginTop: '12px',
+              }}>
+                <p style={{
+                  color: '#92400e', fontSize: '12px',
+                  fontWeight: '700', margin: '0 0 4px',
+                }}>
+                  ⚠️ Delivery Charges Apply
+                </p>
+                <p style={{
+                  color: '#78350f', fontSize: '11px',
+                  margin: 0, lineHeight: '1.5',
+                }}>
+                  State Board, NCERT & TNPSC books have minimal 
+                  profit margin. Online delivery charges apply
+                  based on weight & location.
+                  <br />
+                  <strong>🏪 Store Pickup — No delivery charges!</strong>
+                </p>
+              </div>
+            )}
 
             <button
               onClick={() => {

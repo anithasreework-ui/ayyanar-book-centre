@@ -11,10 +11,19 @@ const Login = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [showForgot, setShowForgot] = useState(false);
-  const [forgotEmail, setForgotEmail] = useState('');
-  const [forgotLoading, setForgotLoading] = useState(false);
-  const [forgotResult, setForgotResult] = useState<any>(null);
   const navigate = useNavigate();
+
+  // States for forgot password flow
+  const [forgotStep, setForgotStep] = useState<
+    'email' | 'otp' | 'newpassword' | 'done'
+  >('email');
+  const [forgotEmail, setForgotEmail] = useState('');
+  const [otpValue, setOtpValue] = useState('');
+  const [screenOtp, setScreenOtp] = useState('');
+  const [resetToken, setResetToken] = useState('');
+  const [newPwd, setNewPwd] = useState('');
+  const [confirmPwd, setConfirmPwd] = useState('');
+  const [forgotLoading, setForgotLoading] = useState(false);
 
   const handleLogin = async () => {
     if (!email || !password) {
@@ -51,10 +60,9 @@ const Login = () => {
     }
   };
 
-  const handleForgotPassword = async () => {
+  const handleForgotEmail = async () => {
     if (!forgotEmail) {
-      alert('Please enter your email!');
-      return;
+      alert('Enter your email!'); return;
     }
     setForgotLoading(true);
     try {
@@ -62,127 +70,351 @@ const Login = () => {
         `${API}/auth/forgot-password`,
         { email: forgotEmail }
       );
-      setForgotResult(res.data);
+      if (res.data.temp_password) {
+        setScreenOtp(res.data.temp_password); // Email failed fallback
+      }
+      setForgotStep('otp');
     } catch (err: any) {
-      alert(err.response?.data?.detail || 'Failed! Try again.');
+      alert(err.response?.data?.detail || 'Failed!');
     } finally {
       setForgotLoading(false);
     }
   };
 
-  // Forgot Password Modal
-  if (showForgot) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center
-                      justify-center px-4">
-        <div className="bg-white rounded-2xl shadow-lg p-8
-                        w-full max-w-md">
+  const handleVerifyOtp = async () => {
+    if (!otpValue || otpValue.length < 6) {
+      alert('Enter OTP or temp password!'); return;
+    }
+    setForgotLoading(true);
+    try {
+      const res = await axios.get(
+        `${API}/auth/verify-reset-token/${otpValue}`
+      );
+      setResetToken(otpValue);
+      setForgotStep('newpassword');
+    } catch (err: any) {
+      alert(err.response?.data?.detail || 'Invalid token!');
+    } finally {
+      setForgotLoading(false);
+    }
+  };
 
-          {!forgotResult ? (
-            <>
-              <div className="text-center mb-6">
-                <p className="text-4xl mb-2">🔑</p>
-                <h1 className="text-2xl font-bold text-gray-800">
-                  Forgot Password?
-                </h1>
-                <p className="text-gray-500 text-sm mt-1">
-                  Enter your email to reset password
+  const handleResetPassword = async () => {
+    if (!newPwd || newPwd.length < 8) {
+      alert('Minimum 8 characters!'); return;
+    }
+    if (newPwd !== confirmPwd) {
+      alert('Passwords do not match!'); return;
+    }
+    setForgotLoading(true);
+    try {
+      await axios.post(
+        `${API}/auth/reset-password`,
+        {
+          token: resetToken,
+          new_password: newPwd,
+          confirm_password: confirmPwd
+        }
+      );
+      setForgotStep('done');
+    } catch (err: any) {
+      alert(err.response?.data?.detail || 'Failed!');
+    } finally {
+      setForgotLoading(false);
+    }
+  };
+
+
+  {showForgot && (
+    <div style={{
+      position: 'fixed', inset: 0,
+      background: 'rgba(0,0,0,0.5)',
+      display: 'flex', alignItems: 'center',
+      justifyContent: 'center', zIndex: 100,
+      padding: '24px',
+    }}>
+      <div style={{
+        background: '#fff', borderRadius: '16px',
+        padding: '32px', maxWidth: '400px',
+        width: '100%',
+        boxShadow: '0 20px 40px rgba(0,0,0,0.15)',
+      }}>
+
+        {/* Step 1 — Email */}
+        {forgotStep === 'email' && (
+          <>
+            <h2 style={{
+              fontSize: '20px', fontWeight: '700',
+              margin: '0 0 8px',
+            }}>
+              Forgot Password?
+            </h2>
+            <p style={{
+              color: '#6b7280', fontSize: '14px',
+              margin: '0 0 20px',
+            }}>
+              Enter your registered email to receive OTP
+            </p>
+            <input
+              type="email"
+              value={forgotEmail}
+              onChange={(e) => setForgotEmail(e.target.value)}
+              placeholder="your@email.com"
+              style={{
+                width: '100%', border: '1px solid #e8e4df',
+                borderRadius: '8px', padding: '11px 14px',
+                fontSize: '14px', outline: 'none',
+                boxSizing: 'border-box', marginBottom: '12px',
+              }}
+              onKeyDown={(e) =>
+                e.key === 'Enter' && handleForgotEmail()
+              }
+            />
+            <button
+              onClick={handleForgotEmail}
+              disabled={forgotLoading}
+              style={{
+                background: '#1a4a2e', color: '#fff',
+                border: 'none', padding: '12px',
+                borderRadius: '8px', fontSize: '14px',
+                fontWeight: '700', cursor: 'pointer',
+                width: '100%', marginBottom: '8px',
+                opacity: forgotLoading ? 0.7 : 1,
+              }}>
+              {forgotLoading ? 'Sending OTP...' : 'Send OTP'}
+            </button>
+            <button
+              onClick={() => {
+                setShowForgot(false);
+                setForgotStep('email');
+              }}
+              style={{
+                background: 'none', border: 'none',
+                color: '#6b7280', fontSize: '13px',
+                cursor: 'pointer', width: '100%',
+              }}>
+              ← Back to Login
+            </button>
+          </>
+        )}
+
+        {/* Step 2 — OTP */}
+        {forgotStep === 'otp' && (
+          <>
+            <h2 style={{
+              fontSize: '20px', fontWeight: '700',
+              margin: '0 0 8px',
+            }}>
+              Enter OTP
+            </h2>
+            <p style={{
+              color: '#6b7280', fontSize: '14px',
+              margin: '0 0 20px',
+            }}>
+              {screenOtp
+                ? 'Email failed. Your OTP is shown below:'
+                : `OTP sent to ${forgotEmail}`}
+            </p>
+
+            {/* Screen OTP display (email fallback) */}
+            {screenOtp && (
+              <div style={{
+                background: '#fef3c7',
+                border: '2px solid #f59e0b',
+                borderRadius: '10px', padding: '16px',
+                textAlign: 'center', marginBottom: '16px',
+              }}>
+                <p style={{
+                  color: '#92400e', fontSize: '12px',
+                  margin: '0 0 8px', fontWeight: '700',
+                }}>
+                  YOUR OTP (Email unavailable)
+                </p>
+                <p style={{
+                  color: '#78350f', fontSize: '36px',
+                  fontWeight: '700', letterSpacing: '8px',
+                  margin: 0, fontFamily: 'monospace',
+                }}>
+                  {screenOtp}
+                </p>
+                <p style={{
+                  color: '#92400e', fontSize: '11px',
+                  margin: '8px 0 0',
+                }}>
+                  ⚠️ Valid for 10 minutes only
                 </p>
               </div>
+            )}
 
-              <div className="mb-4">
-                <label className="text-sm font-medium text-gray-700 block mb-1">
-                  Email Address
-                </label>
-                <input
-                  type="email"
-                  value={forgotEmail}
-                  onChange={(e) => setForgotEmail(e.target.value)}
-                  placeholder="Enter your registered email"
-                  onKeyDown={(e) => e.key === 'Enter' && handleForgotPassword()}
-                  className="w-full border border-gray-200 rounded-lg
-                             px-4 py-3 text-sm focus:outline-none
-                             focus:border-green-500"
-                />
-              </div>
+            {/* OTP Input */}
+            <input
+              type="text"
+              value={otpValue}
+              onChange={(e) => {
+                const v = e.target.value.replace(/\D/g, '');
+                if (v.length <= 6) setOtpValue(v);
+              }}
+              placeholder="000000"
+              maxLength={6}
+              style={{
+                width: '100%', border: '1px solid #e8e4df',
+                borderRadius: '8px', padding: '14px',
+                fontSize: '28px', outline: 'none',
+                boxSizing: 'border-box',
+                textAlign: 'center',
+                letterSpacing: '12px',
+                fontFamily: 'monospace',
+                fontWeight: '700',
+                marginBottom: '12px',
+              }}
+            />
 
-              <button
-                onClick={handleForgotPassword}
-                disabled={forgotLoading}
-                className="w-full text-white py-3 rounded-lg font-bold
-                           disabled:bg-gray-300 transition-colors mb-3"
-                style={{ background: forgotLoading ? '' : '#1a4a2e' }}>
-                {forgotLoading ? 'Processing...' : 'Reset Password'}
-              </button>
+            <button
+              onClick={handleVerifyOtp}
+              disabled={forgotLoading || otpValue.length !== 6}
+              style={{
+                background: '#1a4a2e', color: '#fff',
+                border: 'none', padding: '12px',
+                borderRadius: '8px', fontSize: '14px',
+                fontWeight: '700', cursor: 'pointer',
+                width: '100%', marginBottom: '8px',
+                opacity: (forgotLoading ||
+                  otpValue.length !== 6) ? 0.5 : 1,
+              }}>
+              {forgotLoading ? 'Verifying...' : 'Verify OTP'}
+            </button>
 
-              <button
-                onClick={() => setShowForgot(false)}
-                className="w-full border border-gray-200 text-gray-600
-                           py-3 rounded-lg text-sm hover:bg-gray-50">
-                ← Back to Login
-              </button>
-            </>
-          ) : (
-            <div className="text-center">
-              <p className="text-5xl mb-4">
-                {forgotResult.status === 'email_sent' ? '📧' : '✅'}
+            <button
+              onClick={() => {
+                setForgotStep('email');
+                setOtpValue('');
+                setScreenOtp('');
+              }}
+              style={{
+                background: 'none', border: 'none',
+                color: '#6b7280', fontSize: '13px',
+                cursor: 'pointer', width: '100%',
+              }}>
+              ← Resend OTP
+            </button>
+          </>
+        )}
+
+        {/* Step 3 — New Password */}
+        {forgotStep === 'newpassword' && (
+          <>
+            <h2 style={{
+              fontSize: '20px', fontWeight: '700',
+              margin: '0 0 8px',
+            }}>
+              Create New Password
+            </h2>
+            <p style={{
+              color: '#6b7280', fontSize: '14px',
+              margin: '0 0 20px',
+            }}>
+              Choose a strong password (min 8 characters)
+            </p>
+
+            <input
+              type="password"
+              value={newPwd}
+              onChange={(e) => setNewPwd(e.target.value)}
+              placeholder="New password (min 8 chars)"
+              style={{
+                width: '100%', border: '1px solid #e8e4df',
+                borderRadius: '8px', padding: '11px 14px',
+                fontSize: '14px', outline: 'none',
+                boxSizing: 'border-box', marginBottom: '10px',
+              }}
+            />
+            <input
+              type="password"
+              value={confirmPwd}
+              onChange={(e) => setConfirmPwd(e.target.value)}
+              placeholder="Confirm new password"
+              style={{
+                width: '100%',
+                border: `1px solid ${
+                  confirmPwd && newPwd !== confirmPwd
+                    ? '#dc2626' : '#e8e4df'
+                }`,
+                borderRadius: '8px', padding: '11px 14px',
+                fontSize: '14px', outline: 'none',
+                boxSizing: 'border-box', marginBottom: '12px',
+              }}
+            />
+
+            {confirmPwd && newPwd !== confirmPwd && (
+              <p style={{
+                color: '#dc2626', fontSize: '12px',
+                margin: '-8px 0 10px',
+              }}>
+                ✗ Passwords do not match
               </p>
-              <h2 className="text-xl font-bold text-gray-800 mb-2">
-                {forgotResult.status === 'email_sent'
-                  ? 'Check Your Email!'
-                  : 'Temporary Password Ready!'}
-              </h2>
+            )}
 
-              {forgotResult.status === 'email_sent' ? (
-                <div className="bg-blue-50 border border-blue-200
-                                rounded-xl p-4 mb-4">
-                  <p className="text-blue-800 text-sm">
-                    We sent a temporary password to
-                  </p>
-                  <p className="font-bold text-blue-900 mt-1">
-                    {forgotEmail}
-                  </p>
-                  <p className="text-blue-700 text-xs mt-2">
-                    Check your inbox and spam folder
-                  </p>
-                </div>
-              ) : (
-                // Fallback — email failed
-                <div className="bg-yellow-50 border-2 border-yellow-300
-                                rounded-xl p-4 mb-4">
-                  <p className="text-sm text-gray-600 mb-1">
-                    Email sending failed. Your temporary password:
-                  </p>
-                  <p className="text-2xl font-bold tracking-widest"
-                    style={{ color: '#1a4a2e' }}>
-                    {forgotResult.temp_password}
-                  </p>
-                  <p className="text-xs text-gray-500 mt-2">
-                    ⚠️ Save this! Use it to login.
-                  </p>
-                </div>
-              )}
+            <button
+              onClick={handleResetPassword}
+              disabled={forgotLoading}
+              style={{
+                background: '#1a4a2e', color: '#fff',
+                border: 'none', padding: '12px',
+                borderRadius: '8px', fontSize: '14px',
+                fontWeight: '700', cursor: 'pointer',
+                width: '100%',
+                opacity: forgotLoading ? 0.7 : 1,
+              }}>
+              {forgotLoading ? 'Resetting...' : 'Reset Password'}
+            </button>
+          </>
+        )}
 
-              <p className="text-sm text-gray-500 mb-4">
-                After login → My Profile → Change Password
-              </p>
-
-              <button
-                onClick={() => {
-                  setShowForgot(false);
-                  setForgotResult(null);
-                  setForgotEmail('');
-                }}
-                className="w-full text-white py-3 rounded-lg font-bold"
-                style={{ background: '#1a4a2e' }}>
-                Back to Login
-              </button>
+        {/* Step 4 — Success */}
+        {forgotStep === 'done' && (
+          <div style={{ textAlign: 'center' }}>
+            <div style={{
+              fontSize: '56px', marginBottom: '16px',
+            }}>
+              ✅
             </div>
-          )}
-        </div>
+            <h2 style={{
+              fontSize: '20px', fontWeight: '700',
+              margin: '0 0 8px',
+            }}>
+              Password Reset!
+            </h2>
+            <p style={{
+              color: '#6b7280', fontSize: '14px',
+              margin: '0 0 24px',
+            }}>
+              Your password has been updated successfully.
+              Please login with your new password.
+            </p>
+            <button
+              onClick={() => {
+                setShowForgot(false);
+                setForgotStep('email');
+                setForgotEmail('');
+                setOtpValue('');
+                setNewPwd('');
+                setConfirmPwd('');
+              }}
+              style={{
+                background: '#1a4a2e', color: '#fff',
+                border: 'none', padding: '12px',
+                borderRadius: '8px', fontSize: '14px',
+                fontWeight: '700', cursor: 'pointer',
+                width: '100%',
+              }}>
+              Login Now →
+            </button>
+          </div>
+        )}
       </div>
-    );
-  }
+    </div>
+  )}
+
 
   // Login Form
   return (
