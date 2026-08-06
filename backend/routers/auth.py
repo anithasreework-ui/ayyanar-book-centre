@@ -5,7 +5,11 @@ from jose import jwt, JWTError
 from datetime import datetime, timedelta
 from database import get_db
 from utils.email_sender import  send_reset_link
-import models, os, bcrypt, secrets
+import models, os, bcrypt, secrets, random
+import datetime as dt
+
+
+otp_store: dict = {}
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 SECRET_KEY = os.getenv("SECRET_KEY", "ayyanar2024secretkey")
@@ -208,100 +212,125 @@ def forgot_password(
         models.User.email == email
     ).first()
 
-    # Always return success — security best practice
-    # (Don't reveal if email exists)
+    # Security — always return success
     if not user:
         return {
-            "message": "If this email is registered, "
-                       "a reset link has been sent.",
-            "status": "sent"
+            "message": "If email exists, OTP generated!",
+            "status": "sent",
+            "otp": None
         }
 
-    # Delete old unused tokens for this user
-    db.query(models.PasswordResetToken).filter(
-        models.PasswordResetToken.user_id == user.id,
-        models.PasswordResetToken.used == False
-    ).delete()
+    # 6-digit OTP generate
+    otp = str(random.randint(100000, 999999))
 
-    # Generate secure token
-    token = secrets.token_urlsafe(32)
-    expires_at = (
-        datetime.utcnow() +
-        timedelta(hours=1)
-    )
-
-    # Save token to DB
-    reset_token = models.PasswordResetToken(
-        user_id=user.id,
-        token=token,
-        expires_at=expires_at,
-        used=False
-    )
-    db.add(reset_token)
-    db.commit()
-
-    # Send email
-    sent = send_reset_link(
-        to_email=email,
-        name=user.name,
-        reset_token=token
-    )
-
-    return {
-        "message": "Password reset link sent to your email!",
-        "status": "sent",
-        "email_sent": sent
+    # OTP store (10 minutes)
+    otp_store[email] = {
+        "otp": otp,
+        "user_id": user.id,
+        "expires": dt.datetime.utcnow() +
+                   dt.timedelta(minutes=10)
     }
 
-
-# STEP 2: Token valid-ஆ இருக்கா check பண்ணு
-@router.get("/verify-reset-token/{token}")
-def verify_reset_token(
-    token: str,
-    db: Session = Depends(get_db)
-):
-    reset = db.query(models.PasswordResetToken).filter(
-        models.PasswordResetToken.token == token,
-        models.PasswordResetToken.used == False
-    ).first()
-
-    if not reset:
-        raise HTTPException(
-            status_code=400,
-            detail="Invalid or expired reset link!"
+    # Try email (AWS SES)
+    email_sent = False
+    try:
+        from utils.email_sender import send_reset_email
+        email_sent = send_reset_email(
+            email, user.name, otp
         )
+    except Exception as e:
+        print(f"Email error: {e}")
 
-    # Check expiry
-    if datetime.utcnow() > reset.expires_at:
-        raise HTTPException(
-            status_code=400,
-            detail="Reset link has expired! "
-                   "Please request a new one."
-        )
+    if email_sent:
+        return {
+            "message": f"OTP sent to {email}!",
+            "status": "email_sent",
+            "otp": None  # Email-ல போச்சு — screen-ல காட்டாதே
+        }
+    else:
+        # Email fail — OTP screen-ல காட்டு
+        return {
+            "message": "OTP generated!",
+            "status": "screen_otp",
+            "otp": otp  # Screen-ல காட்டு
+        }
 
-    return {
-        "valid": True,
-        "message": "Token is valid"
-    }
 
-
-# STEP 3: New password set பண்ணுவான்
-@router.post("/reset-password")
-def reset_password(
+@router.post("/verify-otp")
+def verify_otp(
     data: dict,
     db: Session = Depends(get_db)
 ):
-    token = data.get("token", "")
-    new_password = data.get("new_password", "")
-    confirm_password = data.get("confirm_password", "")
+    email = data.get("email", "").strip().lower()
+    otp = data.get("otp", "").strip()
 
-    if not token or not new_password:
+    if email not in otp_store:
         raise HTTPException(
             status_code=400,
-            detail="Token and new password are required!"
+            detail="OTP expired or not found! "
+                   "Request again."
         )
 
-    if new_password != confirm_password:
+    stored = otp_store[email]
+
+    # Expiry check
+    if dt.datetime.utcnow() > stored["expires"]:
+        del otp_store[email]
+        raise HTTPException(
+            status_code=400,
+            detail="OTP expired! Please request again."
+        )
+
+    # OTP check
+    if stored["otp"] != otp:
+        raise HTTPException(
+            status_code=400,
+            detail="Wrong OTP! Please try again."
+        )
+
+    # Generate reset token
+    import secrets
+    token = secrets.token_urlsafe(32)
+    otp_store[f"token_{token}"] = {
+        "user_id": stored["user_id"],
+        "expires": dt.datetime.utcnow() +
+                   dt.timedelta(minutes=15)
+    }
+    del otp_store[email]
+
+    return {
+        "message": "OTP verified!",
+        "reset_token": token,
+        "status": "verified"
+    }
+
+
+@router.post("/reset-password-otp")
+def reset_password_otp(
+    data: dict,
+    db: Session = Depends(get_db)
+):
+    token = data.get("reset_token", "")
+    new_password = data.get("new_password", "")
+    confirm = data.get("confirm_password", "")
+
+    key = f"token_{token}"
+    if key not in otp_store:
+        raise HTTPException(
+            status_code=400,
+            detail="Session expired! Please start again."
+        )
+
+    stored = otp_store[key]
+
+    if dt.datetime.utcnow() > stored["expires"]:
+        del otp_store[key]
+        raise HTTPException(
+            status_code=400,
+            detail="Session expired! Please start again."
+        )
+
+    if new_password != confirm:
         raise HTTPException(
             status_code=400,
             detail="Passwords do not match!"
@@ -310,31 +339,11 @@ def reset_password(
     if len(new_password) < 8:
         raise HTTPException(
             status_code=400,
-            detail="Password must be at least 8 characters!"
+            detail="Minimum 8 characters required!"
         )
 
-    # Find token
-    reset = db.query(models.PasswordResetToken).filter(
-        models.PasswordResetToken.token == token,
-        models.PasswordResetToken.used == False
-    ).first()
-
-    if not reset:
-        raise HTTPException(
-            status_code=400,
-            detail="Invalid or already used reset link!"
-        )
-
-    # Check expiry
-    if datetime.utcnow() > reset.expires_at:
-        raise HTTPException(
-            status_code=400,
-            detail="Reset link expired! Request a new one."
-        )
-
-    # Find user
     user = db.query(models.User).filter(
-        models.User.id == reset.user_id
+        models.User.id == stored["user_id"]
     ).first()
 
     if not user:
@@ -343,17 +352,12 @@ def reset_password(
             detail="User not found!"
         )
 
-    # Update password
     user.password_hash = hash_password(new_password)
-
-    # Mark token as used
-    reset.used = True
-
     db.commit()
+    del otp_store[key]
 
     return {
-        "message": "Password reset successful! "
-                   "Please login with your new password.",
+        "message": "Password reset successful!",
         "status": "success"
     }
 

@@ -906,15 +906,15 @@ const Checkout = () => {
         <select
           value={country}
           onChange={(e) => {
-            const selected = COUNTRIES.find(
-              c => c.value === e.target.value
-            );
-            setCountry(e.target.value);
-            if (selected) {
-              setForm({
-                ...form,
-                country_code: selected.code
-              });
+            const val = e.target.value;
+            setCountry(val);
+            // Auto country code
+            const found = COUNTRIES.find(c => c.value === val);
+            if (found) {
+              setForm(prev => ({
+                ...prev,
+                country_code: found.code
+              }));
             }
           }}
           className="w-full border border-gray-200 rounded-lg
