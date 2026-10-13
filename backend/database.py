@@ -8,21 +8,18 @@ load_dotenv()
 
 DATABASE_URL = os.getenv("DATABASE_URL", "")
 
-# URL fix — special characters handle
+# psycopg2 use பண்ண — URL fix
 if DATABASE_URL:
-    # Replace encoded characters
-    DATABASE_URL = DATABASE_URL.replace("%40", "@")
-    DATABASE_URL = DATABASE_URL.replace("%24", "$")
-    DATABASE_URL = DATABASE_URL.replace("%23", "#")
+    # postgresql:// → postgresql+psycopg2://
+    DATABASE_URL = DATABASE_URL.replace(
+        "postgresql://",
+        "postgresql+psycopg2://"
+    )
 
 engine = create_engine(
     DATABASE_URL,
     pool_pre_ping=True,
     pool_recycle=300,
-    connect_args={
-        "connect_timeout": 10,
-        "sslmode": "require"
-    }
 )
 
 SessionLocal = sessionmaker(
