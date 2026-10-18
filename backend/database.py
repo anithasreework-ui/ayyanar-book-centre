@@ -8,6 +8,14 @@ load_dotenv()
 
 DATABASE_URL = os.getenv("DATABASE_URL", "")
 
+# Force psycopg2 — NOT psycopg3
+if DATABASE_URL:
+    DATABASE_URL = DATABASE_URL.replace(
+        "postgresql://", "postgresql+psycopg2://"
+    ).replace(
+        "postgresql+psycopg://", "postgresql+psycopg2://"
+    )
+
 engine = create_engine(
     DATABASE_URL,
     pool_pre_ping=True,
