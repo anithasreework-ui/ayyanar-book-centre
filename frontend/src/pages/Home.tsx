@@ -80,6 +80,47 @@ const Home = () => {
     <div style={{ background: '#faf9f7', minHeight: '100vh',
       fontFamily: "'Georgia', 'Times New Roman', serif" }}>
 
+      {/* Advertisement Ticker */}
+      <div style={{
+        background: '#d4a853',
+        padding: '8px 0',
+        overflow: 'hidden',
+        position: 'relative',
+      }}>
+        <div style={{
+          display: 'flex',
+          animation: 'ticker 20s linear infinite',
+          whiteSpace: 'nowrap',
+        }}>
+          {[
+            '📚 New TNPSC Books Arrived!',
+            '🎉 Get 10% off on State Board Books!',
+            '🚚 Free Delivery on orders above Rs.500!',
+            '📖 NCERT Books Now Available!',
+            '🏪 Store Pickup Available at Dindigul!',
+            '📚 New TNPSC Books Arrived!',
+            '🎉 Get 10% off on State Board Books!',
+          ].map((text, i) => (
+            <span key={i} style={{
+              marginRight: '60px',
+              color: '#1a4a2e',
+              fontWeight: '700',
+              fontSize: '13px',
+              fontFamily: 'sans-serif',
+            }}>
+              {text}
+            </span>
+          ))}
+        </div>
+      </div>
+
+      <style>{`
+        @keyframes ticker {
+          0% { transform: translateX(0); }
+          100% { transform: translateX(-50%); }
+        }
+      `}</style>
+
       {/* ===== HERO ===== */}
       <div style={{
         background: 'linear-gradient(160deg, #0f2d1a 0%, #1a4a2e 60%, #2d6b45 100%)',

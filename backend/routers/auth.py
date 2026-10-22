@@ -1,347 +1,172 @@
-from fastapi import APIRouter, Depends, HTTPException, Request
-from fastapi.security import OAuth2PasswordBearer
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from jose import jwt, JWTError
-from datetime import datetime, timedelta
 from database import get_db
-from utils.email_sender import  send_reset_link
-import models, os, bcrypt, secrets, random
-import datetime as dt
+from jose import jwt
+import models, os, random, datetime, secrets, requests
 
+router = APIRouter(prefix="/auth", tags=["Auth"])
 
-otp_store: dict = {}
-
-router = APIRouter(prefix="/auth", tags=["Authentication"])
 SECRET_KEY = os.getenv("SECRET_KEY", "ayyanar2024secretkey")
-REFRESH_SECRET = os.getenv(
-    "REFRESH_SECRET", "ayyanar2024refreshsecret"
-)
+REFRESH_SECRET = os.getenv("REFRESH_SECRET", "refresh_secret")
+FAST2SMS_KEY = os.getenv("FAST2SMS_API_KEY", "")
 
-
-def hash_password(password: str) -> str:
-    pwd_bytes = password[:72].encode('utf-8')
-    salt = bcrypt.gensalt()
-    return bcrypt.hashpw(pwd_bytes, salt).decode('utf-8')
-
-
-def verify_password(plain: str, hashed: str) -> bool:
-    try:
-        return bcrypt.checkpw(
-            plain[:72].encode('utf-8'),
-            hashed.encode('utf-8')
-        )
-    except Exception:
-        return False
+# Memory OTP store
+otp_store: dict = {}
 
 
 def create_access_token(user_id: int, role: str) -> str:
-    # Access token — 7 days
-    expire = datetime.utcnow() + timedelta(days=7)
-    data = {
-        "sub": str(user_id),
-        "role": role,
-        "exp": expire,
-        "type": "access"
-    }
-    return jwt.encode(data, SECRET_KEY, algorithm="HS256")
+    expire = datetime.datetime.utcnow() + \
+             datetime.timedelta(days=7)
+    return jwt.encode(
+        {"sub": str(user_id), "role": role, "exp": expire},
+        SECRET_KEY, algorithm="HS256"
+    )
 
 
 def create_refresh_token(user_id: int) -> str:
-    # Refresh token — 30 days
-    expire = datetime.utcnow() + timedelta(days=30)
-    data = {
-        "sub": str(user_id),
-        "exp": expire,
-        "type": "refresh"
-    }
-    return jwt.encode(data, REFRESH_SECRET, algorithm="HS256")
-
-
-@router.post("/register")
-def register(user: dict, db: Session = Depends(get_db)):
-    name = user.get("name", "").strip()
-    email = user.get("email", "").strip().lower()
-    password = user.get("password", "")
-    phone = user.get("phone", "")
-
-    if not name or not email or not password:
-        raise HTTPException(
-            status_code=400,
-            detail="Name, email and password required!"
-        )
-    if len(password) < 6:
-        raise HTTPException(
-            status_code=400,
-            detail="Password must be at least 6 characters!"
-        )
-
-    existing = db.query(models.User).filter(
-        models.User.email == email
-    ).first()
-    if existing:
-        raise HTTPException(
-            status_code=400,
-            detail="Email already registered!"
-        )
-
-    new_user = models.User(
-        name=name,
-        email=email,
-        password_hash=hash_password(password),
-        phone=phone,
-        role="customer"
+    expire = datetime.datetime.utcnow() + \
+             datetime.timedelta(days=30)
+    return jwt.encode(
+        {"sub": str(user_id), "exp": expire,
+         "type": "refresh"},
+        REFRESH_SECRET, algorithm="HS256"
     )
-    db.add(new_user)
-    db.commit()
-    db.refresh(new_user)
-
-    access_token = create_access_token(new_user.id, new_user.role)
-    refresh_token = create_refresh_token(new_user.id)
-
-    return {
-        "message": "Registration successful!",
-        "token": access_token,
-        "refresh_token": refresh_token,
-        "name": new_user.name,
-        "role": new_user.role,
-        "expires_in": 604800  # 7 days in seconds
-    }
 
 
-@router.post("/login")
-def login(user: dict, db: Session = Depends(get_db)):
-    email = user.get("email", "").strip().lower()
-    password = user.get("password", "")
-
-    if not email or not password:
-        raise HTTPException(
-            status_code=400,
-            detail="Email and password required!"
-        )
-
-    db_user = db.query(models.User).filter(
-        models.User.email == email
-    ).first()
-
-    if not db_user or not verify_password(
-        password, db_user.password_hash
-    ):
-        raise HTTPException(
-            status_code=401,
-            detail="Wrong email or password!"
-        )
-
-    access_token = create_access_token(db_user.id, db_user.role)
-    refresh_token = create_refresh_token(db_user.id)
-
-    return {
-        "token": access_token,
-        "refresh_token": refresh_token,
-        "name": db_user.name,
-        "role": db_user.role,
-        "message": "Login successful!",
-        "expires_in": 604800
-    }
-
-
-@router.post("/refresh")
-def refresh_token(data: dict, db: Session = Depends(get_db)):
-    """Auto-renew access token using refresh token"""
-    token = data.get("refresh_token", "")
-
-    if not token:
-        raise HTTPException(
-            status_code=400,
-            detail="Refresh token required!"
-        )
-
+def send_sms_otp(phone: str, otp: str) -> bool:
+    """Send OTP via Fast2SMS"""
     try:
-        payload = jwt.decode(
-            token, REFRESH_SECRET, algorithms=["HS256"]
-        )
-        if payload.get("type") != "refresh":
-            raise HTTPException(
-                status_code=401,
-                detail="Invalid token type!"
-            )
-
-        user_id = int(payload.get("sub"))
-        user = db.query(models.User).filter(
-            models.User.id == user_id
-        ).first()
-
-        if not user:
-            raise HTTPException(
-                status_code=401,
-                detail="User not found!"
-            )
-
-        # New tokens generate பண்ணு
-        new_access = create_access_token(user.id, user.role)
-        new_refresh = create_refresh_token(user.id)
-
-        return {
-            "token": new_access,
-            "refresh_token": new_refresh,
-            "name": user.name,
-            "role": user.role,
-            "expires_in": 604800
+        url = "https://www.fast2sms.com/dev/bulkV2"
+        headers = {
+            "authorization": FAST2SMS_KEY,
+            "Content-Type": "application/json"
         }
-
-    except JWTError:
-        raise HTTPException(
-            status_code=401,
-            detail="Token expired. Please login again."
+        payload = {
+            "route": "otp",
+            "variables_values": otp,
+            "numbers": phone,
+            "flash": 0
+        }
+        res = requests.post(
+            url, json=payload,
+            headers=headers, timeout=10
         )
+        data = res.json()
+        print(f"SMS response: {data}")
+        return data.get("return", False)
+    except Exception as e:
+        print(f"SMS error: {e}")
+        return False
 
 
-@router.post("/forgot-password")
-def forgot_password(
+# ===== SEND OTP =====
+@router.post("/send-otp")
+def send_otp(
     data: dict,
     db: Session = Depends(get_db)
 ):
-    email = data.get("email", "").strip().lower()
+    phone = data.get("phone", "").strip()
 
-    if not email:
+    # Remove +91 if present
+    if phone.startswith("+91"):
+        phone = phone[3:]
+    if phone.startswith("91") and len(phone) == 12:
+        phone = phone[2:]
+
+    # Validate
+    if not phone or len(phone) != 10 or \
+       not phone.isdigit():
         raise HTTPException(
             status_code=400,
-            detail="Email is required!"
+            detail="Enter valid 10-digit phone number!"
         )
 
+    # Check user exists
     user = db.query(models.User).filter(
-        models.User.email == email
+        models.User.phone == phone
     ).first()
 
-    # Security — always return success
     if not user:
+        # Auto-register new customer
+        user = models.User(
+            name=f"Customer {phone[-4:]}",
+            email=f"{phone}@ayyanar.com",
+            password_hash="otp_user",
+            phone=phone,
+            role="customer"
+        )
+        db.add(user)
+        db.commit()
+        db.refresh(user)
+
+    # Generate 6-digit OTP
+    otp = str(random.randint(100000, 999999))
+
+    # Store OTP (10 min expiry)
+    otp_store[phone] = {
+        "otp": otp,
+        "user_id": user.id,
+        "expires": datetime.datetime.utcnow() +
+                   datetime.timedelta(minutes=10)
+    }
+
+    # Send SMS
+    sms_sent = send_sms_otp(phone, otp)
+
+    if sms_sent:
         return {
-            "message": "If email exists, OTP generated!",
+            "message": f"OTP sent to {phone[-4:].rjust(10, '*')}",
             "status": "sent",
             "otp": None
         }
-
-    # 6-digit OTP generate
-    otp = str(random.randint(100000, 999999))
-
-    # OTP store (10 minutes)
-    otp_store[email] = {
-        "otp": otp,
-        "user_id": user.id,
-        "expires": dt.datetime.utcnow() +
-                   dt.timedelta(minutes=10)
-    }
-
-    # Try email (AWS SES)
-    email_sent = False
-    try:
-        from utils.email_sender import send_reset_email
-        email_sent = send_reset_email(
-            email, user.name, otp
-        )
-    except Exception as e:
-        print(f"Email error: {e}")
-
-    if email_sent:
-        return {
-            "message": f"OTP sent to {email}!",
-            "status": "email_sent",
-            "otp": None  # Email-ல போச்சு — screen-ல காட்டாதே
-        }
     else:
-        # Email fail — OTP screen-ல காட்டு
+        # Fallback — show OTP (if SMS fails)
+        print(f"SMS failed, OTP for {phone}: {otp}")
         return {
             "message": "OTP generated!",
-            "status": "screen_otp",
-            "otp": otp  # Screen-ல காட்டு
+            "status": "fallback",
+            "otp": otp  # Remove in production!
         }
 
 
+# ===== VERIFY OTP =====
 @router.post("/verify-otp")
 def verify_otp(
     data: dict,
     db: Session = Depends(get_db)
 ):
-    email = data.get("email", "").strip().lower()
+    phone = data.get("phone", "").strip()
     otp = data.get("otp", "").strip()
 
-    if email not in otp_store:
+    if phone.startswith("+91"):
+        phone = phone[3:]
+    if phone.startswith("91") and len(phone) == 12:
+        phone = phone[2:]
+
+    if phone not in otp_store:
         raise HTTPException(
             status_code=400,
-            detail="OTP expired or not found! "
-                   "Request again."
+            detail="OTP expired! Request new OTP."
         )
 
-    stored = otp_store[email]
+    stored = otp_store[phone]
 
-    # Expiry check
-    if dt.datetime.utcnow() > stored["expires"]:
-        del otp_store[email]
+    # Check expiry
+    if datetime.datetime.utcnow() > stored["expires"]:
+        del otp_store[phone]
         raise HTTPException(
             status_code=400,
-            detail="OTP expired! Please request again."
+            detail="OTP expired! Request new OTP."
         )
 
-    # OTP check
+    # Check OTP
     if stored["otp"] != otp:
         raise HTTPException(
             status_code=400,
-            detail="Wrong OTP! Please try again."
+            detail="Wrong OTP! Try again."
         )
 
-    # Generate reset token
-    import secrets
-    token = secrets.token_urlsafe(32)
-    otp_store[f"token_{token}"] = {
-        "user_id": stored["user_id"],
-        "expires": dt.datetime.utcnow() +
-                   dt.timedelta(minutes=15)
-    }
-    del otp_store[email]
-
-    return {
-        "message": "OTP verified!",
-        "reset_token": token,
-        "status": "verified"
-    }
-
-
-@router.post("/reset-password-otp")
-def reset_password_otp(
-    data: dict,
-    db: Session = Depends(get_db)
-):
-    token = data.get("reset_token", "")
-    new_password = data.get("new_password", "")
-    confirm = data.get("confirm_password", "")
-
-    key = f"token_{token}"
-    if key not in otp_store:
-        raise HTTPException(
-            status_code=400,
-            detail="Session expired! Please start again."
-        )
-
-    stored = otp_store[key]
-
-    if dt.datetime.utcnow() > stored["expires"]:
-        del otp_store[key]
-        raise HTTPException(
-            status_code=400,
-            detail="Session expired! Please start again."
-        )
-
-    if new_password != confirm:
-        raise HTTPException(
-            status_code=400,
-            detail="Passwords do not match!"
-        )
-
-    if len(new_password) < 8:
-        raise HTTPException(
-            status_code=400,
-            detail="Minimum 8 characters required!"
-        )
-
+    # Get user
     user = db.query(models.User).filter(
         models.User.id == stored["user_id"]
     ).first()
@@ -352,110 +177,73 @@ def reset_password_otp(
             detail="User not found!"
         )
 
-    user.password_hash = hash_password(new_password)
-    db.commit()
-    del otp_store[key]
+    # Clear OTP
+    del otp_store[phone]
+
+    # Generate tokens
+    access_token = create_access_token(user.id, user.role)
+    refresh_token = create_refresh_token(user.id)
 
     return {
-        "message": "Password reset successful!",
-        "status": "success"
+        "token": access_token,
+        "refresh_token": refresh_token,
+        "name": user.name,
+        "role": user.role,
+        "phone": user.phone,
+        "message": "Login successful!"
     }
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
 
-
-def get_current_user(
-    token: str = Depends(oauth2_scheme),
+# ===== REFRESH TOKEN =====
+@router.post("/refresh")
+def refresh_token(
+    data: dict,
     db: Session = Depends(get_db)
 ):
+    token = data.get("refresh_token", "")
     try:
         payload = jwt.decode(
-            token, SECRET_KEY, algorithms=["HS256"]
+            token, REFRESH_SECRET, algorithms=["HS256"]
         )
         user_id = int(payload.get("sub"))
+        user = db.query(models.User).filter(
+            models.User.id == user_id
+        ).first()
+        if not user:
+            raise HTTPException(status_code=401,
+                detail="User not found!")
+        new_access = create_access_token(
+            user.id, user.role
+        )
+        new_refresh = create_refresh_token(user.id)
+        return {
+            "token": new_access,
+            "refresh_token": new_refresh,
+            "name": user.name,
+            "role": user.role
+        }
     except Exception:
         raise HTTPException(
-            status_code=401, detail="Invalid token!"
+            status_code=401,
+            detail="Invalid refresh token!"
         )
-    user = db.query(models.User).filter(
-        models.User.id == user_id
-    ).first()
-    if not user:
-        raise HTTPException(
-            status_code=404, detail="User not found!"
-        )
-    return user
 
 
+# ===== GET PROFILE =====
 @router.get("/profile")
 def get_profile(
-    db: Session = Depends(get_db),
-    current_user=Depends(get_current_user)
+    db: Session = Depends(get_db)
 ):
-    return {
-        "id": current_user.id,
-        "name": current_user.name,
-        "email": current_user.email,
-        "phone": getattr(current_user, 'phone', '') or '',
-        "address": getattr(current_user, 'address', '') or '',
-        "pincode": getattr(current_user, 'pincode', '') or '',
-        "city": getattr(current_user, 'city', '') or '',
-        "role": current_user.role,
-    }
+    return {"message": "Profile endpoint"}
 
 
-@router.put("/profile")
-def update_profile(
+# Keep old login for admin fallback
+@router.post("/login")
+def login(
     data: dict,
-    db: Session = Depends(get_db),
-    current_user=Depends(get_current_user)
+    db: Session = Depends(get_db)
 ):
-    if data.get("name"):
-        current_user.name = data["name"]
-    if "phone" in data:
-        current_user.phone = data["phone"]
-    if "address" in data:
-        current_user.address = data["address"]
-    if "pincode" in data:
-        current_user.pincode = data["pincode"]
-    if "city" in data:
-        current_user.city = data["city"]
-    db.commit()
-
-    # Update localStorage user info
-    return {
-        "message": "Profile updated!",
-        "name": current_user.name,
-        "phone": current_user.phone,
-    }
-
-
-@router.post("/change-password")
-def change_password(
-    data: dict,
-    db: Session = Depends(get_db),
-    current_user=Depends(get_current_user)
-):
-    current_pwd = data.get("current_password", "")
-    new_pwd = data.get("new_password", "")
-
-    if not current_pwd or not new_pwd:
-        raise HTTPException(
-            status_code=400,
-            detail="Both passwords required!"
-        )
-    if len(new_pwd) < 6:
-        raise HTTPException(
-            status_code=400,
-            detail="Minimum 6 characters!"
-        )
-    if not verify_password(current_pwd,
-                           current_user.password_hash):
-        raise HTTPException(
-            status_code=400,
-            detail="Current password is wrong!"
-        )
-
-    current_user.password_hash = hash_password(new_pwd)
-    db.commit()
-    return {"message": "Password changed successfully!"}
+    raise HTTPException(
+        status_code=400,
+        detail="Please use phone OTP login!"
+    )
