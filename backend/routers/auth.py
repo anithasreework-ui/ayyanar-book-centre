@@ -35,32 +35,28 @@ def create_refresh_token(user_id: int) -> str:
 
 def send_sms(phone: str, otp: str) -> bool:
     if not FAST2SMS_KEY:
-        print("No Fast2SMS key!")
+        print("❌ No Fast2SMS key!")
         return False
     try:
-        # Clean API key — ASCII only
-        clean_key = FAST2SMS_KEY.encode(
-            'utf-8'
-        ).decode('ascii', 'ignore').strip()
+        clean_key = FAST2SMS_KEY.strip()
 
-        res = requests.post(
-            "https://www.fast2SMS.com/dev/bulkV2",
-            headers={
+        # OTP Route — No DLT needed!
+        res = requests.get(
+            "https://www.fast2sms.com/dev/bulkV2",
+            params={
                 "authorization": clean_key,
-                "Content-Type": "application/json"
-            },
-            json={
-                "route": "q",
-                "message": f"Your OTP for Ayyanar Book Centre is {otp}",
-                "numbers": phone
+                "route": "otp",
+                "variables_values": otp,
+                "numbers": phone,
+                "flash": 0
             },
             timeout=10
         )
         data = res.json()
-        print(f"SMS response: {data}")
+        print(f"✅ SMS response: {data}")
         return data.get("return", False)
     except Exception as e:
-        print(f"SMS Error: {e}")
+        print(f"❌ SMS Error: {e}")
         return False
 
 
