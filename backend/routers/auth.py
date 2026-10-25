@@ -44,16 +44,15 @@ def send_sms(phone: str, otp: str) -> bool:
         ).decode('ascii', 'ignore').strip()
 
         res = requests.post(
-            "https://www.fast2sms.com/dev/bulkV2",
+            "https://www.fast2SMS.com/dev/bulkV2",
             headers={
                 "authorization": clean_key,
                 "Content-Type": "application/json"
             },
             json={
-                "route": "otp",
-                "variables_values": otp,
-                "numbers": phone,
-                "flash": 0
+                "route": "q",
+                "message": f"Your OTP for Ayyanar Book Centre is {otp}",
+                "numbers": phone
             },
             timeout=10
         )
