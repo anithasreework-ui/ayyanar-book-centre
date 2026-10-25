@@ -23,6 +23,7 @@ const TABS = [
   { key: 'add_product', icon: '➕', label: 'Add Product' },
   { key: 'discounts', icon: '🏷️', label: 'Discounts' },
   { key: 'excel_upload', icon: '📊', label: 'Excel Upload' },
+  { key: 'advertisements', icon: '📢', label: 'Advertisements' },
   { key: 'wholesale', icon: '🏭', label: 'Wholesale' },
   { key: 'shop_settings', icon: '⚙️', label: 'Shop Settings' },
 ];
@@ -293,6 +294,7 @@ const Admin = () => {
   const [orders, setOrders] = useState<any[]>([]);
   const [payments, setPayments] = useState<any[]>([]);
   const [enquiries, setEnquiries] = useState<any[]>([]);
+  const [ads, setAds] = useState<any[]>([]);
   const [stats, setStats] = useState<any>(null);
   const [activeTab, setActiveTab] = useState('dashboard');
   const [filterType, setFilterType] = useState('all');
@@ -308,6 +310,10 @@ const Admin = () => {
     name: '', description: '', price: '',
     mrp: '', category: '', subcategory: '',
     stock_qty: '', image_url: '',
+  });
+  const [newAd, setNewAd] = useState({
+    title: '', content: '', type: 'text',
+    media_url: '', is_active: true, sort_order: 0,
   });
 
   const navigate = useNavigate();
@@ -371,6 +377,20 @@ const Admin = () => {
     }
   };
 
+  const fetchAds = async () => {
+    setTabLoading(true);
+    try {
+      const adRes = await axios.get(
+        `${API}/advertisements/admin/all`,
+        { headers }
+      );
+      setAds(adRes.data);
+    } catch { setAds([]); }
+    finally {
+      setTabLoading(false);
+    }
+  };
+
   const fetchSettings = async () => {
     setTabLoading(true);
     try {
@@ -404,6 +424,7 @@ const Admin = () => {
     if (activeTab === 'orders') fetchOrders();
     if (activeTab === 'payments') fetchPayments();
     if (activeTab === 'wholesale') fetchEnquiries();
+    if (activeTab === 'advertisements') fetchAds();
     if (activeTab === 'shop_settings') fetchSettings();
     if (activeTab === 'products' && products.length === 0) {
       fetchStats();
@@ -1012,15 +1033,13 @@ const Admin = () => {
                           <td className="p-3">
                             <span className={`px-2 py-0.5 rounded
                                              text-xs font-medium ${
-                              p.payment_method ===
-                              'cash_on_delivery'
+                              p.payment_method === 'cash_on_delivery'
                                 ? 'bg-orange-100 text-orange-700'
                                 : p.payment_method === 'upi'
                                 ? 'bg-blue-100 text-blue-700'
                                 : 'bg-purple-100 text-purple-700'
                             }`}>
-                              {p.payment_method ===
-                              'cash_on_delivery'
+                              {p.payment_method === 'cash_on_delivery'
                                 ? '💵 COD'
                                 : p.payment_method === 'upi'
                                 ? '📱 UPI'
@@ -1797,136 +1816,257 @@ const Admin = () => {
           </div>
         )}
 
-        {/* ===== SHOP SETTINGS ===== */}
-        {activeTab === 'shop_settings' && (
-          <div className="max-w-2xl">
+        {/* ===== ADVERTISEMENTS ===== */}
+        {activeTab === 'advertisements' && (
+          <div className="space-y-4">
+
+            {/* Add New Ad */}
             <div className="bg-white rounded-xl shadow-sm border
                             border-gray-100 p-6">
-              <h2 className="text-xl font-bold mb-1">
-                ⚙️ Shop Settings
+              <h2 className="text-lg font-bold mb-4">
+                📢 Add Advertisement
               </h2>
-              <p className="text-sm text-gray-500 mb-5">
-                Changes reflect on all pages instantly —
-                chatbot, footer, terms, wholesale etc.
-              </p>
+              <div className="space-y-3">
 
-              {tabLoading ? <TabLoader /> : (
-                <>
-                  {settingsSaved && (
-                    <div className="rounded-xl p-3 mb-4 text-sm
-                                    font-medium"
-                      style={{
-                        background: '#f0f7f4',
-                        color: '#1a4a2e',
-                        border: '1px solid #a8d5b5'
-                      }}>
-                      ✅ Settings saved successfully!
-                    </div>
-                  )}
+                <div>
+                  <label className="text-sm font-medium
+                                   text-gray-700 block mb-1">
+                    Title
+                  </label>
+                  <input type="text"
+                    value={newAd.title}
+                    onChange={(e) => setNewAd({
+                      ...newAd, title: e.target.value
+                    })}
+                    placeholder="e.g. New Books Arrived!"
+                    className="w-full border rounded-lg px-3 py-2
+                               text-sm focus:outline-none
+                               focus:border-green-500"
+                  />
+                </div>
 
-                  <div className="space-y-4">
+                <div>
+                  <label className="text-sm font-medium
+                                   text-gray-700 block mb-1">
+                    Content / Message *
+                  </label>
+                  <textarea
+                    value={newAd.content}
+                    onChange={(e) => setNewAd({
+                      ...newAd, content: e.target.value
+                    })}
+                    placeholder="📚 New TNPSC 2025 Books! Get 10% off!"
+                    rows={3}
+                    className="w-full border rounded-lg px-3 py-2
+                               text-sm focus:outline-none
+                               focus:border-green-500 resize-none"
+                  />
+                </div>
 
-                    {/* Branch 1 */}
-                    <div className="rounded-xl p-4"
-                      style={{
-                        background: '#f0f7f4',
-                        border: '1px solid #a8d5b5'
-                      }}>
-                      <p className="font-bold mb-3 text-sm"
-                        style={{ color: '#1a4a2e' }}>
-                        🏪 Main Shop — Branch 1
-                      </p>
-                      <div className="space-y-3">
-                        {[
-                          { key: 'shop_name',
-                            label: 'Shop Name' },
-                          { key: 'shop_address',
-                            label: 'Shop Address' },
-                          { key: 'phone',
-                            label: 'Phone Number' },
-                          { key: 'customer_care',
-                            label: 'Customer Care Number' },
-                          { key: 'email', label: 'Email ID' },
-                          { key: 'instagram',
-                            label: 'Instagram Handle' },
-                          { key: 'working_hours',
-                            label: 'Working Hours' },
-                          { key: 'tagline',
-                            label: 'Shop Tagline' },
-                        ].map((f) => (
-                          <div key={f.key}>
-                            <label className="text-sm font-medium
-                                              text-gray-700">
-                              {f.label}
-                            </label>
-                            <input type="text"
-                              value={shopSettings[f.key] || ''}
-                              onChange={(e) => setShopSettings({
-                                ...shopSettings,
-                                [f.key]: e.target.value
-                              })}
-                              className="w-full border rounded-lg
-                                         px-3 py-2 mt-1 text-sm
-                                         focus:outline-none
-                                         focus:border-green-500"
-                            />
-                          </div>
-                        ))}
+                <div>
+                  <label className="text-sm font-medium
+                                   text-gray-700 block mb-1">
+                    Type
+                  </label>
+                  <select
+                    value={newAd.type}
+                    onChange={(e) => setNewAd({
+                      ...newAd, type: e.target.value
+                    })}
+                    className="w-full border rounded-lg px-3 py-2
+                               text-sm focus:outline-none">
+                    <option value="text">📝 Text (Ticker)</option>
+                    <option value="image">🖼️ Image Banner</option>
+                    <option value="video">🎬 Video</option>
+                  </select>
+                </div>
+
+                {(newAd.type === 'image' ||
+                  newAd.type === 'video') && (
+                  <div>
+                    <label className="text-sm font-medium
+                                     text-gray-700 block mb-1">
+                      {newAd.type === 'image'
+                        ? 'Image URL'
+                        : 'Video URL (YouTube/Drive)'}
+                    </label>
+                    <input type="text"
+                      value={newAd.media_url}
+                      onChange={(e) => setNewAd({
+                        ...newAd, media_url: e.target.value
+                      })}
+                      placeholder="https://..."
+                      className="w-full border rounded-lg px-3 py-2
+                                 text-sm focus:outline-none
+                                 focus:border-green-500"
+                    />
+                  </div>
+                )}
+
+                <div className="flex items-center gap-3">
+                  <div className="flex-1">
+                    <label className="text-sm font-medium
+                                     text-gray-700 block mb-1">
+                      Sort Order
+                    </label>
+                    <input type="number"
+                      value={newAd.sort_order}
+                      onChange={(e) => setNewAd({
+                        ...newAd,
+                        sort_order: parseInt(e.target.value) || 0
+                      })}
+                      className="w-full border rounded-lg px-3 py-2
+                                 text-sm focus:outline-none"
+                    />
+                  </div>
+                  <div className="flex items-center gap-2 mt-5">
+                    <input type="checkbox"
+                      checked={newAd.is_active}
+                      onChange={(e) => setNewAd({
+                        ...newAd, is_active: e.target.checked
+                      })}
+                      className="w-4 h-4"
+                    />
+                    <span className="text-sm font-medium
+                                     text-gray-700">
+                      Active
+                    </span>
+                  </div>
+                </div>
+
+                <button
+                  onClick={async () => {
+                    if (!newAd.content) {
+                      alert('Content required!');
+                      return;
+                    }
+                    try {
+                      await axios.post(
+                        `${API}/advertisements/admin/create`,
+                        newAd,
+                        { headers }
+                      );
+                      alert('✅ Ad created!');
+                      setNewAd({
+                        title: '', content: '',
+                        type: 'text', media_url: '',
+                        is_active: true, sort_order: 0,
+                      });
+                      const res = await axios.get(
+                        `${API}/advertisements/admin/all`,
+                        { headers }
+                      );
+                      setAds(res.data);
+                    } catch {
+                      alert('Failed!');
+                    }
+                  }}
+                  className="w-full text-white py-2.5 rounded-xl
+                             font-bold hover:opacity-90"
+                  style={{ background: '#1a4a2e' }}>
+                  ➕ Add Advertisement
+                </button>
+              </div>
+            </div>
+
+            {/* Existing Ads List */}
+            <div className="bg-white rounded-xl shadow-sm border
+                            border-gray-100">
+              <div className="p-4 border-b">
+                <h2 className="text-lg font-bold">
+                  All Advertisements ({ads.length})
+                </h2>
+              </div>
+
+              {ads.length === 0 ? (
+                <div className="text-center py-10">
+                  <p className="text-4xl mb-2">📢</p>
+                  <p className="text-gray-400">
+                    No ads yet! Add one above.
+                  </p>
+                </div>
+              ) : (
+                <div className="divide-y">
+                  {ads.map((ad: any) => (
+                    <div key={ad.id}
+                      className="p-4 flex items-start gap-4">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="font-medium text-gray-800">
+                            {ad.title || 'No title'}
+                          </span>
+                          <span className={`text-xs px-2 py-0.5
+                                           rounded-full font-medium ${
+                            ad.is_active
+                              ? 'bg-green-100 text-green-700'
+                              : 'bg-gray-100 text-gray-500'
+                          }`}>
+                            {ad.is_active ? '✅ Active' : '⏸ Paused'}
+                          </span>
+                          <span className="text-xs bg-blue-100
+                                           text-blue-700 px-2 py-0.5
+                                           rounded-full">
+                            {ad.type}
+                          </span>
+                        </div>
+                        <p className="text-sm text-gray-600">
+                          {ad.content}
+                        </p>
+                        {ad.media_url && (
+                          <p className="text-xs text-blue-500 mt-1
+                                        truncate">
+                            🔗 {ad.media_url}
+                          </p>
+                        )}
+                      </div>
+                      <div className="flex gap-2 flex-shrink-0">
+                        <button
+                          onClick={async () => {
+                            try {
+                              await axios.put(
+                                `${API}/advertisements/admin/update/${ad.id}`,
+                                { is_active: !ad.is_active },
+                                { headers }
+                              );
+                              const res = await axios.get(
+                                `${API}/advertisements/admin/all`,
+                                { headers }
+                              );
+                              setAds(res.data);
+                            } catch {
+                              alert('Failed!');
+                            }
+                          }}
+                          className="text-xs border px-2 py-1
+                                     rounded-lg hover:bg-gray-50
+                                     text-gray-600 border-gray-200">
+                          {ad.is_active ? '⏸ Pause' : '▶ Activate'}
+                        </button>
+                        <button
+                          onClick={async () => {
+                            if (!window.confirm('Delete this ad?'))
+                              return;
+                            try {
+                              await axios.delete(
+                                `${API}/advertisements/admin/delete/${ad.id}`,
+                                { headers }
+                              );
+                              setAds(ads.filter(
+                                (a: any) => a.id !== ad.id
+                              ));
+                            } catch {
+                              alert('Failed!');
+                            }
+                          }}
+                          className="text-xs border px-2 py-1
+                                     rounded-lg hover:bg-red-50
+                                     text-red-500 border-red-200">
+                          🗑️
+                        </button>
                       </div>
                     </div>
-
-                    {/* Branch 2 */}
-                    <div className="bg-blue-50 rounded-xl p-4
-                                    border border-blue-100">
-                      <p className="font-bold text-blue-800
-                                     mb-1 text-sm">
-                        🏪 Branch 2 (Optional)
-                      </p>
-                      <p className="text-xs text-gray-500 mb-3">
-                        Fill when you open a new branch.
-                        Leave blank if not applicable.
-                      </p>
-                      {[
-                        { key: 'branch_2_name',
-                          label: 'Branch 2 Name',
-                          ph: 'e.g. Ayyanar Book Centre — Karur' },
-                        { key: 'branch_2_address',
-                          label: 'Branch 2 Address',
-                          ph: 'Full address with pincode' },
-                        { key: 'branch_2_phone',
-                          label: 'Branch 2 Phone',
-                          ph: '+91 XXXXXXXXXX' },
-                      ].map((f) => (
-                        <div key={f.key} className="mb-3">
-                          <label className="text-sm font-medium
-                                            text-gray-700">
-                            {f.label}
-                          </label>
-                          <input type="text"
-                            value={shopSettings[f.key] || ''}
-                            placeholder={f.ph}
-                            onChange={(e) => setShopSettings({
-                              ...shopSettings,
-                              [f.key]: e.target.value
-                            })}
-                            className="w-full border rounded-lg
-                                       px-3 py-2 mt-1 text-sm
-                                       focus:outline-none
-                                       focus:border-blue-500"
-                          />
-                        </div>
-                      ))}
-                    </div>
-
-                    <button onClick={saveSettings}
-                      className="w-full text-white py-3 rounded-xl
-                                 font-bold hover:opacity-90
-                                 transition-colors text-base"
-                      style={{ background: '#1a4a2e' }}>
-                      💾 Save All Settings
-                    </button>
-                  </div>
-                </>
+                  ))}
+                </div>
               )}
             </div>
           </div>
