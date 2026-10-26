@@ -39,24 +39,32 @@ def send_sms(phone: str, otp: str) -> bool:
         return False
     try:
         clean_key = FAST2SMS_KEY.strip()
+        message = (
+            f"Your OTP for Ayyanar Book Centre "
+            f"login is {otp}. Valid for 10 minutes. "
+            f"Do not share with anyone."
+        )
 
-        # OTP Route — No DLT needed!
-        res = requests.get(
+        # Quick SMS — No DLT needed!
+        res = requests.post(
             "https://www.fast2sms.com/dev/bulkV2",
+            headers={
+                "authorization": clean_key
+            },
             params={
-                "authorization": clean_key,
-                "route": "otp",
-                "variables_values": otp,
+                "route": "q",
+                "message": message,
                 "numbers": phone,
                 "flash": 0
             },
-            timeout=10
+            timeout=15
         )
         data = res.json()
-        print(f"✅ SMS response: {data}")
+        print(f"SMS response: {data}")
         return data.get("return", False)
+
     except Exception as e:
-        print(f"❌ SMS Error: {e}")
+        print(f"SMS Error: {e}")
         return False
 
 
