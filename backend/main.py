@@ -6,7 +6,7 @@ import models
 from collections import defaultdict
 import time
 from routers import (auth, products, chatbot, recommend,
-                     admin, orders, wholesale, excel_upload,settings,payment)
+                     admin, orders, wholesale, excel_upload,settings,payment,advertisements)
 
 models.Base.metadata.create_all(bind=engine)
 
@@ -57,6 +57,7 @@ app.include_router(wholesale.router)
 app.include_router(excel_upload.router)
 app.include_router(settings.router)
 app.include_router(payment.router)
+app.include_router(advertisements.router, prefix="/advertisements", tags=["Advertisements"])
 
 @app.get("/")
 def home():
