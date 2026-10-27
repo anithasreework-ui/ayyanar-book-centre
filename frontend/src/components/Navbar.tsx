@@ -7,6 +7,7 @@ const API = 'https://ayyanar-book-centre-1.onrender.com';
 const Navbar = () => {
   const [search, setSearch] = useState('');
   const [menuOpen, setMenuOpen] = useState(false);
+  const [cartCount, setCartCount] = useState(0);
   const [settings, setSettings] = useState<any>({
     phone: '+91 9894235330',
     email: 'ayyanarbookcentredgl1@gmail.com',
@@ -20,6 +21,26 @@ const Navbar = () => {
     axios.get(`${API}/settings/public`)
       .then((res) => { if (res.data) setSettings(res.data); })
       .catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    const updateCart = () => {
+      const cart = JSON.parse(
+        localStorage.getItem('cart') || '[]'
+      );
+      const count = cart.reduce(
+        (sum: number, item: any) => sum + item.quantity, 0
+      );
+      setCartCount(count);
+    };
+    updateCart();
+    window.addEventListener('storage', updateCart);
+    // Custom event for same-tab updates
+    window.addEventListener('cartUpdated', updateCart);
+    return () => {
+      window.removeEventListener('storage', updateCart);
+      window.removeEventListener('cartUpdated', updateCart);
+    };
   }, []);
 
   const handleSearch = (e: React.FormEvent) => {
@@ -122,8 +143,34 @@ const Navbar = () => {
               <Link key={item.to} to={item.to}
                 className="flex flex-col items-center px-3 py-2
                            rounded-lg transition-all text-center min-w-14
-                           hover:bg-green-800">
-                <span className="text-lg leading-none">{item.icon}</span>
+                           hover:bg-green-800 relative">
+                {item.to === '/cart' ? (
+                  <div style={{ position: 'relative', display: 'inline-block' }}>
+                    <span className="text-lg leading-none">🛒</span>
+                    {cartCount > 0 && (
+                      <span style={{
+                        position: 'absolute',
+                        top: '-8px',
+                        right: '-8px',
+                        background: '#d4a853',
+                        color: '#1a4a2e',
+                        fontSize: '10px',
+                        fontWeight: '700',
+                        borderRadius: '50%',
+                        width: '16px',
+                        height: '16px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        lineHeight: 1,
+                      }}>
+                        {cartCount > 9 ? '9+' : cartCount}
+                      </span>
+                    )}
+                  </div>
+                ) : (
+                  <span className="text-lg leading-none">{item.icon}</span>
+                )}
                 <span className="text-xs mt-0.5">{item.label}</span>
               </Link>
             ))}
@@ -186,7 +233,18 @@ const Navbar = () => {
 
           {/* Mobile */}
           <div className="flex md:hidden items-center gap-2">
-            <Link to="/cart" className="text-2xl">🛒</Link>
+            <Link to="/cart" className="text-2xl relative">
+              🛒
+              {cartCount > 0 && (
+                <span className="absolute -top-1 -right-2
+                                 bg-yellow-400 text-gray-900
+                                 rounded-full min-w-5 h-5
+                                 text-[10px] font-bold
+                                 flex items-center justify-center">
+                  {cartCount}
+                </span>
+              )}
+            </Link>
             <button onClick={() => setMenuOpen(!menuOpen)}
               className="text-2xl p-1">
               {menuOpen ? '✕' : '☰'}

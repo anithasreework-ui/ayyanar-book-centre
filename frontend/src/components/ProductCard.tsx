@@ -57,6 +57,9 @@ const ProductCard = ({ product }: { product: Product }) => {
       cart.push({ ...product, quantity: 1 });
     }
     localStorage.setItem('cart', JSON.stringify(cart));
+    // Trigger navbar update
+    window.dispatchEvent(new Event('cartUpdated'));
+    // Visual feedback
     setAdded(true);
     setTimeout(() => setAdded(false), 2000);
   };
