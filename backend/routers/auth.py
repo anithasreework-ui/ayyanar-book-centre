@@ -3,6 +3,10 @@ from sqlalchemy.orm import Session
 from database import get_db
 from jose import jwt
 import models, os, random, datetime, requests, bcrypt
+from fastapi import Depends, HTTPException, status
+from fastapi.security import OAuth2PasswordBearer
+
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/login")
 
 router = APIRouter(prefix="/auth", tags=["Auth"])
 
