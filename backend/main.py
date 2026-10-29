@@ -5,8 +5,11 @@ from database import engine
 import models
 from collections import defaultdict
 import time
-from routers import (auth, products, chatbot, recommend,
-                     admin, orders, wholesale, excel_upload,settings,payment,advertisements)
+from routers import (
+    auth, products, chatbot, recommend,
+    admin, orders, wholesale, excel_upload,
+    settings, payment, advertisements
+)
 
 models.Base.metadata.create_all(bind=engine)
 
@@ -20,32 +23,29 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Rate limiting and security headers
 request_counts = defaultdict(list)
+
 
 @app.middleware("http")
 async def security_middleware(request: Request, call_next):
     client_ip = request.client.host
     now = time.time()
-
     request_counts[client_ip] = [
         t for t in request_counts[client_ip]
         if now - t < 60
     ]
-
     if len(request_counts[client_ip]) > 100:
         return JSONResponse(
             status_code=429,
             content={"detail": "Too many requests!"}
         )
-
     request_counts[client_ip].append(now)
-
     response = await call_next(request)
     response.headers["X-Content-Type-Options"] = "nosniff"
     response.headers["X-Frame-Options"] = "DENY"
     response.headers["X-XSS-Protection"] = "1; mode=block"
     return response
+
 
 app.include_router(auth.router)
 app.include_router(products.router)
@@ -57,14 +57,16 @@ app.include_router(wholesale.router)
 app.include_router(excel_upload.router)
 app.include_router(settings.router)
 app.include_router(payment.router)
-app.include_router(advertisements.router, prefix="/advertisements", tags=["Advertisements"])
+app.include_router(advertisements.router)
+
 
 @app.get("/")
 def home():
-    return {"message": "Ayyanar Book Centre API Running! 🚀"}
-@app.get("/ping")
-def ping():
-    return {"status": "alive", "shop": "Ayyanar Book Centre"}
+    return {
+        "message": "Ayyanar Book Centre API Running! 🚀"
+    }
+
+
 @app.get("/ping")
 def ping():
     return {

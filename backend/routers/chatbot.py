@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 from database import get_db
 from groq import Groq
+import models
 import os
 from dotenv import load_dotenv
 
