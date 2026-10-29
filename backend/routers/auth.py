@@ -378,3 +378,26 @@ def refresh_token(
 @router.get("/profile")
 def get_profile():
     return {"message": "OK"}
+
+
+def verify_token(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Could not validate credentials",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        username: str = payload.get("sub")
+
+        if username is None:
+            raise credentials_exception
+
+        if payload.get("role") in ["admin", "staff"]:
+            return payload  # Staff can access
+
+        raise credentials_exception
+
+    except JWTError:
+        raise credentials_exception

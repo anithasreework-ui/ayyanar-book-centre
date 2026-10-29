@@ -54,8 +54,6 @@ const CATEGORIES = [
 const Home = () => {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [ads, setAds] = useState<any[]>([]);
-  const [currentAd, setCurrentAd] = useState(0);
   const [settings, setSettings] = useState<any>({
     shop_name: 'Ayyanar Book Centre',
     phone: '+91 9894235330',
@@ -76,189 +74,11 @@ const Home = () => {
     axios.get(`${API}/settings/public`)
       .then((res) => { if (res.data) setSettings(res.data); })
       .catch(() => {});
-
-    axios.get(`${API}/advertisements/public`)
-      .then((res) => setAds(res.data))
-      .catch(() => {});
   }, []);
-
-  useEffect(() => {
-    if (ads.length === 0) return;
-    const timer = setInterval(() => {
-      setCurrentAd((prev) => (prev + 1) % ads.length);
-    }, 5000);
-    return () => clearInterval(timer);
-  }, [ads]);
 
   return (
     <div style={{ background: '#faf9f7', minHeight: '100vh',
       fontFamily: "'Georgia', 'Times New Roman', serif" }}>
-
-      {/* Advertisement Ticker */}
-      <div style={{
-        background: '#d4a853',
-        padding: '8px 0',
-        overflow: 'hidden',
-        position: 'relative',
-      }}>
-        <div style={{
-          display: 'flex',
-          animation: 'ticker 20s linear infinite',
-          whiteSpace: 'nowrap',
-        }}>
-          {[
-            '📚 New TNPSC Books Arrived!',
-            '🎉 Get 10% off on State Board Books!',
-            '🚚 Free Delivery on orders above Rs.500!',
-            '📖 NCERT Books Now Available!',
-            '🏪 Store Pickup Available at Dindigul!',
-            '📚 New TNPSC Books Arrived!',
-            '🎉 Get 10% off on State Board Books!',
-          ].map((text, i) => (
-            <span key={i} style={{
-              marginRight: '60px',
-              color: '#1a4a2e',
-              fontWeight: '700',
-              fontSize: '13px',
-              fontFamily: 'sans-serif',
-            }}>
-              {text}
-            </span>
-          ))}
-        </div>
-      </div>
-
-      <style>{`
-        @keyframes ticker {
-          0% { transform: translateX(0); }
-          100% { transform: translateX(-50%); }
-        }
-      `}</style>
-
-      {/* Text Ticker */}
-      {ads.filter((a: any) => a.type === 'text').length > 0 && (
-        <div style={{
-          background: '#1a4a2e',
-          padding: '8px 0',
-          overflow: 'hidden',
-        }}>
-          <div style={{
-            display: 'inline-flex',
-            animation: 'marquee 25s linear infinite',
-            whiteSpace: 'nowrap',
-          }}>
-            {Array(2).fill(
-              ads.filter((a: any) => a.type === 'text')
-            ).flat().map((ad: any, i: number) => (
-              <span key={i} style={{
-                marginRight: '80px',
-                color: '#d4a853',
-                fontWeight: '700',
-                fontSize: '13px',
-                fontFamily: 'sans-serif',
-              }}>
-                {ad.content}
-              </span>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Image Banner */}
-      {ads.filter((a: any) => a.type === 'image').length > 0 && (
-        <div style={{
-          position: 'relative',
-          overflow: 'hidden',
-          maxHeight: '200px',
-        }}>
-          {ads.filter((a: any) => a.type === 'image').map(
-            (ad: any, i: number) => (
-              <div key={ad.id} style={{
-                display: currentAd === i ? 'block' : 'none',
-              }}>
-                <img
-                  src={ad.media_url}
-                  alt={ad.title}
-                  style={{
-                    width: '100%',
-                    height: '200px',
-                    objectFit: 'cover',
-                  }}
-                />
-                {ad.title && (
-                  <div style={{
-                    position: 'absolute',
-                    bottom: 0, left: 0, right: 0,
-                    background: 'rgba(0,0,0,0.5)',
-                    color: '#fff',
-                    padding: '8px 16px',
-                    fontSize: '14px',
-                    fontWeight: '600',
-                  }}>
-                    {ad.title}
-                  </div>
-                )}
-              </div>
-            )
-          )}
-
-          {/* Dots */}
-          {ads.filter((a: any) => a.type === 'image').length > 1 && (
-            <div style={{
-              position: 'absolute',
-              bottom: '8px',
-              left: '50%',
-              transform: 'translateX(-50%)',
-              display: 'flex', gap: '6px',
-            }}>
-              {ads.filter((a: any) => a.type === 'image').map(
-                (_, i: number) => (
-                  <button
-                    key={i}
-                    onClick={() => setCurrentAd(i)}
-                    style={{
-                      width: '8px', height: '8px',
-                      borderRadius: '50%',
-                      border: 'none',
-                      background: currentAd === i
-                        ? '#d4a853' : 'rgba(255,255,255,0.5)',
-                      cursor: 'pointer',
-                      padding: 0,
-                    }}
-                  />
-                )
-              )}
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Video Banner */}
-      {ads.filter((a: any) => a.type === 'video').length > 0 && (
-        <div style={{ padding: '16px', background: '#f9fafb' }}>
-          {ads.filter((a: any) => a.type === 'video').map(
-            (ad: any) => (
-              <div key={ad.id} style={{ marginBottom: '12px' }}>
-                <p style={{
-                  fontSize: '14px', fontWeight: '700',
-                  margin: '0 0 8px', color: '#1a4a2e',
-                  fontFamily: 'sans-serif',
-                }}>
-                  {ad.title}
-                </p>
-                <iframe
-                  src={ad.media_url}
-                  style={{
-                    width: '100%', height: '200px',
-                    border: 'none', borderRadius: '8px',
-                  }}
-                  allowFullScreen
-                />
-              </div>
-            )
-          )}
-        </div>
-      )}
 
       {/* ===== HERO ===== */}
       <div style={{
@@ -312,7 +132,7 @@ const Home = () => {
                 <span style={{ color: '#d4a853', fontSize: '11px',
                   letterSpacing: '3px', fontFamily: 'sans-serif',
                   textTransform: 'uppercase' }}>
-                  Est. 1985 . Dindigul, Tamil Nadu
+                  Est. 1985.Dindigul, Tamil Nadu
                 </span>
               </div>
 
@@ -969,11 +789,6 @@ const Home = () => {
         @keyframes shimmer {
           0% { background-position: -200% 0; }
           100% { background-position: 200% 0; }
-        }
-
-        @keyframes marquee {
-          0% { transform: translateX(0); }
-          100% { transform: translateX(-50%); }
         }
       `}</style>
     </div>

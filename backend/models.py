@@ -32,6 +32,8 @@ class Product(Base):
     is_available = Column(Boolean, default=True)
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
     mrp = Column(Float, nullable=True)
+    last_updated_by = Column(String(100), nullable=True)
+    last_updated_at = Column(DateTime, nullable=True)
 
 class Order(Base):
     __tablename__ = "orders"
