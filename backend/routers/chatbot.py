@@ -1,6 +1,5 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
-from sqlalchemy import text
 from database import get_db
 from groq import Groq
 import os
@@ -14,81 +13,74 @@ client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 
 def get_shop_info(db: Session) -> str:
     try:
+        from sqlalchemy import text
         result = db.execute(
             text("SELECT key, value FROM shop_settings")
         ).fetchall()
         settings = {row[0]: row[1] for row in result}
 
-        # Branch 2 — இருந்தா மட்டும் add பண்ணு
+        # Get products
+        products = db.query(models.Product).filter(
+            models.Product.is_available == True
+        ).all()
+
+        product_list = ""
+        if products:
+            product_list = "\n=== AVAILABLE PRODUCTS ===\n"
+            for p in products[:20]:  # First 20
+                product_list += (
+                    f"- {p.name}: Rs.{p.price} "
+                    f"(Category: {p.category})\n"
+                )
+
         branch2 = ""
         if settings.get("branch_2_name", "").strip():
             branch2 = f"""
-Branch 2 Name: {settings.get('branch_2_name', '')}
-Branch 2 Address: {settings.get('branch_2_address', '')}
-Branch 2 Phone: {settings.get('branch_2_phone', '')}"""
+Branch 2: {settings.get('branch_2_name')}
+Branch 2 Address: {settings.get('branch_2_address')}
+Branch 2 Phone: {settings.get('branch_2_phone')}"""
 
         return f"""
-=== AYYANAR BOOK CENTRE — OFFICIAL SHOP INFO ===
+=== AYYANAR BOOK CENTRE — OFFICIAL INFO ===
 Shop Name: {settings.get('shop_name', 'Ayyanar Book Centre')}
-Address: {settings.get('shop_address', 'Dindigul, Tamil Nadu, India - 624 001')}
-Phone: {settings.get('phone', '+91 9894235330')}
-Customer Care: {settings.get('customer_care', '+91 9894235330')}
+Address: {settings.get('shop_address', 'Dindigul, Tamil Nadu')}
+Phone: {settings.get('phone', '+91 9486208869')}
+Customer Care: {settings.get('customer_care', '+91 9486208869')}
 Email: {settings.get('email', 'ayyanarbookcentredgl1@gmail.com')}
 Instagram: {settings.get('instagram', '@ayyanarbookcentre')}
-Working Hours: {settings.get('working_hours', 'Monday to Saturday, 9:00 AM to 8:00 PM')}
-Tagline: {settings.get('tagline', 'Knowledge is the floor of success')}{branch2}
+Working Hours: {settings.get('working_hours', 'Mon-Sat 9AM-9PM')}
+Tagline: {settings.get('tagline', 'Knowledge is the floor of success')}
+{branch2}
 
 === DELIVERY INFO ===
 Free Delivery: Under 1kg — FREE across India
 Tamil Nadu (above 1kg): Rs.80
-Other States (above 1kg): Rs.150
+Other States: Rs.150
 International: Rs.800+
-Store Pickup: Available at Dindigul shop (Prepaid orders only)
-Worldwide Delivery: Yes, available
+Store Pickup: No charges — Collect at Dindigul
+Worldwide: Yes, available
 
-=== PRODUCT CATEGORIES ===
-1. State Board Textbooks & Guides
-2. State Board (TNPSC) Competitive Books
-3. CBSE Textbooks & Guides
-4. Central Board Competitive Books
-5. NCERT / NEET Books
-6. Medical Books
-7. Stationery
-8. Children Books
-9. Novels
-10. Motivational Books
-11. Gifts & Hampers
-12. School Projects & Teacher Training
-13. Combos
-14. Wholesale (Schools & Colleges — MOU available)
+=== CATEGORIES ===
+State Board Textbooks, TNPSC Books, CBSE Books,
+NCERT/NEET Books, Medical Books, Stationery,
+Children Books, Novels, Motivational, Gifts,
+School Projects, Combos, Wholesale
+{product_list}
 
-=== STRICT RULES — MUST FOLLOW ===
-RULE 1: Use ONLY the above information to answer questions
-RULE 2: If customer asks for phone number → give exact number from above
-RULE 3: If customer asks for address → give exact address from above
-RULE 4: If customer asks for email → give exact email from above
-RULE 5: If you don't know the answer → say exactly:
-         "I don't have that information. Please contact our customer care at [phone number from above]"
-RULE 6: NEVER guess, make up, or give random information
-RULE 7: NEVER give a phone number that is not in the above info
-RULE 8: Be friendly, helpful and professional always
+=== RULES ===
+1. Answer ONLY from above info
+2. Phone asked → give exact number
+3. Books asked → check product list above
+4. Unknown → say contact us at phone number
+5. Be friendly and helpful
+6. Support Tamil, English, Tanglish
 """
     except Exception:
-        # Fallback if DB fails
         return """
-=== AYYANAR BOOK CENTRE ===
-Shop Name: Ayyanar Book Centre
-Address: Dindigul, Tamil Nadu, India - 624 001
-Phone: +91 9894235330
-Customer Care: +91 9894235330
+Shop: Ayyanar Book Centre, Dindigul
+Phone: +91 9486208869
 Email: ayyanarbookcentredgl1@gmail.com
-Instagram: @ayyanarbookcentre
-Working Hours: Monday to Saturday, 9:00 AM to 8:00 PM
-
-Delivery: Free under 1kg | TN Rs.80 | Other states Rs.150 | International Rs.800+
-Store Pickup: Available (Prepaid only)
-
-RULE: If unknown question, say contact customer care at +91 9894235330
+Hours: Mon-Sat 9AM-9PM
 """
 
 

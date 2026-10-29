@@ -112,18 +112,25 @@ const Checkout = () => {
       return false;
     }
     if (deliveryType === 'home_delivery') {
-      if (!form.address) {
-        alert('Delivery address is required!');
+      // Build full address from fields
+      const fullAddress = [
+        form.door_number,
+        form.street,
+        form.area,
+        form.city,
+        form.state,
+      ].filter(Boolean).join(', ');
+
+      if (!fullAddress || fullAddress.trim() === '') {
+        alert('Please fill delivery address details!');
         return false;
       }
       if (!form.pincode) {
         alert('Pincode is required!');
         return false;
       }
-      if (country !== 'India' && !form.email) {
-        alert('Email is required for international orders!');
-        return false;
-      }
+      // Set address field
+      setForm(prev => ({ ...prev, address: fullAddress }));
     }
     return true;
   };
@@ -146,12 +153,9 @@ const Checkout = () => {
         form.area,
         form.city,
         form.state,
-        form.pincode,
-        country,
       ].filter(Boolean).join(', ');
 
-      // Step 1: Create order in DB
-      const orderRes = await axios.post(
+      const res = await axios.post(
         `${API}/orders/`,
         {
           items: cartItems.map((i) => ({
@@ -159,7 +163,7 @@ const Checkout = () => {
             quantity: i.quantity,
           })),
           delivery_type: deliveryType,
-          delivery_address: fullAddress,
+          delivery_address: fullAddress || form.address, // Use fullAddress or fallback to form.address
           phone: form.phone,
           alt_phone: form.alt_phone,
           pincode: form.pincode,
@@ -170,7 +174,7 @@ const Checkout = () => {
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
-      const orderData = orderRes.data;
+      const orderData = res.data;
 
       // COD — No payment now
       if (selectedPayment === 'cod') {
