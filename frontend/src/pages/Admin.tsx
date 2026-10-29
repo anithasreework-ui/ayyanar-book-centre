@@ -2071,6 +2071,83 @@ const Admin = () => {
             </div>
           </div>
         )}
+
+        {/* ===== SHOP SETTINGS ===== */}
+        {activeTab === 'shop_settings' && (
+          <div className="max-w-2xl">
+            <div className="bg-white rounded-xl shadow-sm border
+                            border-gray-100 p-6">
+              <h2 className="text-xl font-bold mb-1">
+                ⚙️ Shop Settings
+              </h2>
+              <p className="text-sm text-gray-500 mb-5">
+                Changes reflect on the chatbot, footer, terms and
+                wholesale pages.
+              </p>
+
+              {tabLoading ? <TabLoader /> : (
+                <>
+                  {settingsSaved && (
+                    <div className="rounded-xl p-3 mb-4 text-sm
+                                    font-medium"
+                      style={{
+                        background: '#f0f7f4',
+                        color: '#1a4a2e',
+                        border: '1px solid #a8d5b5'
+                      }}>
+                      ✅ Settings saved successfully!
+                    </div>
+                  )}
+
+                  <div className="space-y-3">
+                    {[
+                      { key: 'shop_name', label: 'Shop Name' },
+                      { key: 'shop_address', label: 'Shop Address' },
+                      { key: 'phone', label: 'Phone Number' },
+                      { key: 'customer_care',
+                        label: 'Customer Care Number' },
+                      { key: 'email', label: 'Email ID' },
+                      { key: 'instagram', label: 'Instagram Handle' },
+                      { key: 'working_hours', label: 'Working Hours' },
+                      { key: 'tagline', label: 'Shop Tagline' },
+                      { key: 'branch_2_name',
+                        label: 'Branch 2 Name (optional)' },
+                      { key: 'branch_2_address',
+                        label: 'Branch 2 Address (optional)' },
+                      { key: 'branch_2_phone',
+                        label: 'Branch 2 Phone (optional)' },
+                    ].map((f) => (
+                      <div key={f.key}>
+                        <label className="text-sm font-medium
+                                          text-gray-700">
+                          {f.label}
+                        </label>
+                        <input type="text"
+                          value={shopSettings[f.key] || ''}
+                          onChange={(e) => setShopSettings({
+                            ...shopSettings,
+                            [f.key]: e.target.value
+                          })}
+                          className="w-full border rounded-lg px-3
+                                     py-2 mt-1 text-sm
+                                     focus:outline-none
+                                     focus:border-green-500"
+                        />
+                      </div>
+                    ))}
+
+                    <button onClick={saveSettings}
+                      className="w-full text-white py-3 rounded-xl
+                                 font-bold hover:opacity-90 mt-2"
+                      style={{ background: '#1a4a2e' }}>
+                      💾 Save All Settings
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
