@@ -2,24 +2,58 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 from sqlalchemy import text
 from database import get_db
-import os, traceback
+import os, traceback, requests
 from dotenv import load_dotenv
 
 load_dotenv()
 
 router = APIRouter(prefix="/ai", tags=["AI Chatbot"])
 
-MODEL = "llama-3.3-70b-versatile"
+GROQ_URL = "https://api.groq.com/openai/v1/chat/completions"
+MODELS_URL = "https://api.groq.com/openai/v1/models"
 
-# Create the Groq client safely so a bad library version
-# cannot crash the whole backend at startup
-client = None
-try:
-    from groq import Groq
-    if os.getenv("GROQ_API_KEY"):
-        client = Groq(api_key=os.getenv("GROQ_API_KEY"))
-except Exception as e:
-    print(f"Groq init error: {e}")
+# Tried in order. You can also set GROQ_MODEL in Render to override.
+MODEL_CANDIDATES = [m for m in [
+    os.getenv("GROQ_MODEL"),
+    "openai/gpt-oss-120b",
+    "openai/gpt-oss-20b",
+] if m]
+
+
+def groq_headers():
+    return {
+        "Authorization": f"Bearer {os.getenv('GROQ_API_KEY', '').strip()}",
+        "Content-Type": "application/json",
+    }
+
+
+def ask_groq(messages, max_tokens=1000):
+    """Try each model until one works. Returns (reply, model_used)."""
+    last_error = "no model tried"
+    for model in MODEL_CANDIDATES:
+        try:
+            r = requests.post(
+                GROQ_URL,
+                headers=groq_headers(),
+                json={
+                    "model": model,
+                    "messages": messages,
+                    "max_tokens": max_tokens,
+                    "temperature": 0.2,
+                },
+                timeout=30,
+            )
+            data = r.json()
+            if r.status_code == 200:
+                content = data["choices"][0]["message"].get("content")
+                if content:
+                    return content.strip(), model
+                last_error = f"{model}: empty reply"
+            else:
+                last_error = f"{model}: {data.get('error', {}).get('message', r.text)}"
+        except Exception as e:
+            last_error = f"{model}: {e}"
+    raise Exception(last_error)
 
 LANG_RULES = {
     "english": "Reply in simple, friendly English.",
@@ -171,27 +205,23 @@ def chat_with_bot(message: dict, db: Session = Depends(get_db)):
     if not user_message:
         return {"reply": "Please type a message!"}
 
-    if client is None:
+    if not os.getenv("GROQ_API_KEY"):
         return {
             "reply": "Chat is temporarily unavailable. Please call +91 9486208869.",
             "status": "error",
-            "error": "Groq client not initialised (check GROQ_API_KEY / groq version)",
+            "error": "GROQ_API_KEY missing",
         }
 
     try:
         system_prompt = build_system_prompt(db, user_message, language)
-        response = client.chat.completions.create(
-            model=MODEL,
-            messages=[
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": user_message},
-            ],
-            max_tokens=500,
-            temperature=0.2,
-        )
+        reply, model_used = ask_groq([
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": user_message},
+        ])
         return {
-            "reply": response.choices[0].message.content,
+            "reply": reply,
             "language_used": language,
+            "model": model_used,
             "status": "success",
         }
     except Exception as e:
@@ -205,20 +235,26 @@ def chat_with_bot(message: dict, db: Session = Depends(get_db)):
 
 @router.get("/test")
 def test_groq():
-    """Open /ai/test in the browser to see if Groq works."""
-    if client is None:
-        return {"ok": False, "problem": "Groq client not initialised. Check GROQ_API_KEY and groq version."}
     try:
-        r = client.chat.completions.create(
-            model=MODEL,
-            messages=[{"role": "user", "content": "Say OK"}],
-            max_tokens=5,
+        reply, model_used = ask_groq(
+            [{"role": "user", "content": "Say OK"}], max_tokens=50
         )
-        return {"ok": True, "reply": r.choices[0].message.content}
+        return {"ok": True, "model": model_used, "reply": reply}
     except Exception as e:
         return {"ok": False, "problem": str(e)}
 
 
+@router.get("/models")
+def list_models():
+    """Shows which models YOUR Groq key can use right now."""
+    try:
+        r = requests.get(MODELS_URL, headers=groq_headers(), timeout=15)
+        data = r.json()
+        return {"models": [m["id"] for m in data.get("data", [])] or data}
+    except Exception as e:
+        return {"error": str(e)}
+
+
 @router.get("/health")
 def health_check():
-    return {"status": "Chatbot running!", "model": MODEL}
+    return {"status": "Chatbot running!", "models_tried": MODEL_CANDIDATES}
